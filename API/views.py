@@ -3,6 +3,25 @@ from rest_framework.response import Response
 from rest_framework import status
 from .utils import get_bol_access_token, fetch_invoice_spec, calculate_invoice_totals
 
+
+class RootView(APIView):
+    """
+    Root endpoint that provides API information and health check.
+    GET /
+    """
+    
+    def get(self, request):
+        return Response({
+            "message": "Sitecap API is running",
+            "version": "1.0.0",
+            "endpoints": {
+                "invoice_analytics": "/api/invoice/<invoice_id>/",
+                "admin": "/admin/"
+            },
+            "health": "ok"
+        }, status=status.HTTP_200_OK)
+
+
 class InvoiceAnalyticsView(APIView):
     """
     GET /api/invoice/<invoice_id>/
