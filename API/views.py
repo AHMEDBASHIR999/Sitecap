@@ -7,6 +7,7 @@ from django.http import JsonResponse
 from .utils import get_bol_access_token, fetch_invoice_spec, calculate_invoice_totals
 import pandas as pd
 import re
+from datetime import datetime
 
 
 class RootView(APIView):
@@ -178,22 +179,33 @@ class PilgrimScheduleView(View):
         # ==========================
         def build_schedule(df_f, title, m, static_time=None, static_route=None):
             if df_f.empty:
-                return f"\n===== {title} =====\n(NO DATA)\n"
+                return f"\n{'='*38}\n✨ {title} ✨\n{'='*38}\n❌ NO DATA AVAILABLE\n"
             
-            out = [f"\n===== {title} =====\n"]
-            for _, r in df_f.iterrows():
+            out = [f"\n{'='*38}\n✨ {title} ✨\n{'='*38}\n"]
+            for idx, (_, r) in enumerate(df_f.iterrows(), 1):
+                # Handle time: if 'time' key exists in mapping, use column data
+                # Otherwise use only static_time (for f2 schedule)
+                if 'time' in m:
+                    time_display = f"{r[m['time']]} {static_time if static_time else ''}"
+                else:
+                    time_display = static_time if static_time else ""
+                
+                flight_info = f"✈️ Flight      : {r[m['flight']]}\n" if 'flight' in m and r[m['flight']] else ""
+                
                 out.append(
                     f"""
-Booking   : {r[m['booking']]}
-Time      : {r[m['time']]} {static_time if static_time else ""}
-Flight    : {r[m['flight']] if 'flight' in m else ''}
-Route     : {static_route}
-Pickup    : {r[m['pickup']]}
-Drop      : {r[m['drop']]}
-Client    : {r[m['client']]}
-Mobile    : {r[m['mobile']]}
-Agent     : {r[m['agent']]}
-----------------------------------------
+┌────────────────────────────────────┐
+│ 📋 BOOKING #{idx}                                        
+├────────────────────────────────────┤
+📦 Booking     : {r[m['booking']]}
+⏰ Time        : {time_display}
+{flight_info}🛣️ Route       : {static_route}
+📍 Pickup      : {r[m['pickup']]}
+🎯 Drop        : {r[m['drop']]}
+👤 Client      : {r[m['client']]}
+📱 Mobile      : {r[m['mobile']]}
+🏢 Agent       : {r[m['agent']]}
+└────────────────────────────────────┘
 """
                 )
             return "".join(out)
@@ -248,7 +260,6 @@ Agent     : {r[m['agent']]}
                 {
                     "booking": "TR / مواصلات",
                     "pickup": "MAKKA HOTEL / مكة فندق",
-                    "time": "ETA/ موعدالوصول",
                     "drop": "MEDINAH HOTEL / مدينه فندق",
                     "client": "FAMILY NAME",
                     "mobile": "MOBILE NO.",
@@ -294,4 +305,15 @@ Agent     : {r[m['agent']]}
             )
         )
         
-        return final_output
+        # Add beautiful header with date
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        header = f"""
+╔════════════════════════════════════╗
+    🕌 PILGRIM TRAVEL SCHEDULES 🕌                  
+                                                          
+    📅 Schedule Date: {input_date_raw.upper()}                                         
+                                                         
+╚════════════════════════════════════╝
+"""
+        
+        return header + final_output
