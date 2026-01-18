@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pilgrim Travel Schedules - Secure Access</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #0a5f38;
+            --secondary-color: #d4af37;
+            --accent-color: #8b4513;
+            --text-dark: #2c3e50;
+            --text-light: #ecf0f1;
+            --background: linear-gradient(135deg, #0a5f38 0%, #1a7a4a 50%, #0a5f38 100%);
+            --card-bg: rgba(255, 255, 255, 0.98);
+            --shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--background);
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Decorative Background Pattern */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(circle at 20% 50%, rgba(212, 175, 55, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(212, 175, 55, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: fadeInDown 1s ease-out;
+        }
+
+        .header h1 {
+            color: var(--text-light);
+            font-size: 2.8rem;
+            font-weight: 700;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .header .icon {
+            font-size: 3rem;
+        }
+
+        .header p {
+            color: var(--secondary-color);
+            font-size: 1.2rem;
+            font-weight: 500;
+            text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 50px;
+            box-shadow: var(--shadow);
+            animation: fadeInUp 1s ease-out;
+            backdrop-filter: blur(10px);
+        }
+
+        .security-screen,
+        .schedule-screen {
+            display: none;
+        }
+
+        .security-screen.active,
+        .schedule-screen.active {
+            display: block;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .security-title {
+            text-align: center;
+            color: var(--primary-color);
+            font-size: 2rem;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .security-subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 1.1rem;
+        }
+
+        .lock-icon {
+            text-align: center;
+            font-size: 4rem;
+            color: var(--secondary-color);
+            margin-bottom: 30px;
+            animation: lockPulse 2s infinite;
+        }
+
+        .form-group {
+            margin-bottom: 30px;
+        }
+
+        .form-group label {
+            display: block;
+            color: var(--text-dark);
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 18px;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(10, 95, 56, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 18px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color) 0%, #1a7a4a 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(10, 95, 56, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(10, 95, 56, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            background: #fee;
+            border-left: 4px solid #e74c3c;
+            color: #c0392b;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+            animation: shake 0.5s;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .schedule-output {
+            background: #f8f9fa;
+            border: 2px solid var(--primary-color);
+            border-radius: 12px;
+            padding: 25px;
+            margin-top: 30px;
+            max-height: 600px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .schedule-output.show {
+            display: block;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        .schedule-output pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            color: var(--text-dark);
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.95rem;
+            line-height: 1.8;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        .loading-text {
+            color: var(--primary-color);
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .date-info {
+            background: linear-gradient(135deg, var(--secondary-color) 0%, #c29a2b 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 600;
+            display: none;
+        }
+
+        .date-info.show {
+            display: block;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        /* Animations */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes lockPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .header .icon {
+                font-size: 2rem;
+            }
+
+            .header p {
+                font-size: 1rem;
+            }
+
+            .card {
+                padding: 30px 20px;
+            }
+
+            .security-title {
+                font-size: 1.5rem;
+            }
+
+            .security-subtitle {
+                font-size: 1rem;
+            }
+
+            .lock-icon {
+                font-size: 3rem;
+            }
+
+            .form-group input,
+            .btn {
+                padding: 15px;
+                font-size: 1rem;
+            }
+
+            .schedule-output {
+                max-height: 400px;
+            }
+
+            .schedule-output pre {
+                font-size: 0.85rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+
+            .header {
+                margin-bottom: 20px;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .card {
+                padding: 25px 15px;
+                border-radius: 15px;
+            }
+
+            .lock-icon {
+                font-size: 2.5rem;
+            }
+        }
+
+        /* Custom Scrollbar */
+        .schedule-output::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        .schedule-output::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .schedule-output::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 10px;
+        }
+
+        .schedule-output::-webkit-scrollbar-thumb:hover {
+            background: #1a7a4a;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <span class="icon">🕌</span>
+                <span>Pilgrim Travel Schedules</span>
+                <span class="icon">✈️</span>
+            </h1>
+            <p>Professional Travel Management System</p>
+        </div>
+
+        <div class="card">
+            <!-- Security Code Screen -->
+            <div class="security-screen active" id="securityScreen">
+                <div class="lock-icon">🔒</div>
+                <h2 class="security-title">Secure Access Required</h2>
+                <p class="security-subtitle">Please enter your security code to continue</p>
+
+                <div class="error-message" id="securityError">
+                    Invalid security code. Please try again.
+                </div>
+
+                <form id="securityForm">
+                    <div class="form-group">
+                        <label for="securityCode">Security Code</label>
+                        <input 
+                            type="password" 
+                            id="securityCode" 
+                            name="security_code" 
+                            placeholder="Enter security code"
+                            required
+                            autocomplete="off"
+                        >
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        🔓 Unlock Access
+                    </button>
+                </form>
+            </div>
+
+            <!-- Schedule Generation Screen -->
+            <div class="schedule-screen" id="scheduleScreen">
+                <h2 class="security-title">📅 Generate Travel Schedule</h2>
+                <p class="security-subtitle">Enter the date to view all scheduled trips</p>
+
+                <div class="error-message" id="scheduleError"></div>
+                
+                <div class="date-info" id="dateInfo"></div>
+
+                <form id="scheduleForm">
+                    <div class="form-group">
+                        <label for="dateInput">Travel Date</label>
+                        <input 
+                            type="text" 
+                            id="dateInput" 
+                            name="date" 
+                            placeholder="e.g., 13-Jan or JAN-13"
+                            required
+                            autocomplete="off"
+                        >
+                        <small style="color: #666; margin-top: 8px; display: block;">
+                            Format: DD-MMM (e.g., 13-Jan, 25-Feb, 01-Mar)
+                        </small>
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="generateBtn">
+                        🚀 Generate Schedules
+                    </button>
+                </form>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <div class="loading-text">Generating schedules...</div>
+                </div>
+
+                <div class="schedule-output" id="scheduleOutput">
+                    <pre id="scheduleContent"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get CSRF token from cookie
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        const csrftoken = getCookie('csrftoken');
+
+        // Security Form Handler
+        document.getElementById('securityForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const securityCode = document.getElementById('securityCode').value;
+            const errorDiv = document.getElementById('securityError');
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = '🔄 Verifying...';
+            errorDiv.classList.remove('show');
+
+            try {
+                const formData = new FormData();
+                formData.append('action', 'check_code');
+                formData.append('security_code', securityCode);
+
+                const response = await fetch('', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrftoken,
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Hide security screen and show schedule screen
+                    document.getElementById('securityScreen').classList.remove('active');
+                    document.getElementById('scheduleScreen').classList.add('active');
+                } else {
+                    errorDiv.textContent = data.error || 'Invalid security code. Please try again.';
+                    errorDiv.classList.add('show');
+                    document.getElementById('securityCode').value = '';
+                    document.getElementById('securityCode').focus();
+                }
+            } catch (error) {
+                errorDiv.textContent = 'An error occurred. Please try again.';
+                errorDiv.classList.add('show');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '🔓 Unlock Access';
+            }
+        });
+
+        // Schedule Form Handler
+        document.getElementById('scheduleForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const dateInput = document.getElementById('dateInput').value;
+            const errorDiv = document.getElementById('scheduleError');
+            const dateInfoDiv = document.getElementById('dateInfo');
+            const loading = document.getElementById('loading');
+            const scheduleOutput = document.getElementById('scheduleOutput');
+            const generateBtn = document.getElementById('generateBtn');
+            
+            generateBtn.disabled = true;
+            generateBtn.textContent = '⏳ Processing...';
+            errorDiv.classList.remove('show');
+            scheduleOutput.classList.remove('show');
+            dateInfoDiv.classList.remove('show');
+            loading.classList.add('show');
+
+            try {
+                const formData = new FormData();
+                formData.append('action', 'generate_schedule');
+                formData.append('date', dateInput);
+
+                const response = await fetch('', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrftoken,
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    dateInfoDiv.textContent = `📍 Showing schedules for: ${dateInput}`;
+                    dateInfoDiv.classList.add('show');
+                    document.getElementById('scheduleContent').textContent = data.schedule;
+                    scheduleOutput.classList.add('show');
+                } else {
+                    errorDiv.textContent = data.error || 'Failed to generate schedules.';
+                    errorDiv.classList.add('show');
+                }
+            } catch (error) {
+                errorDiv.textContent = 'An error occurred while generating schedules.';
+                errorDiv.classList.add('show');
+            } finally {
+                loading.classList.remove('show');
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = '🚀 Generate Schedules';
+            }
+        });
+
+        // Auto-focus on security code input
+        document.getElementById('securityCode').focus();
+    </script>
+</body>
+</html>
+
