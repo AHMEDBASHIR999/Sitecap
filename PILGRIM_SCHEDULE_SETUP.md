@@ -64,8 +64,9 @@ python manage.py runserver
 ### Step 3: Access the Application
 Open your browser and navigate to:
 ```
-http://localhost:8000/api/
+http://localhost:8000/
 ```
+**Note**: The pilgrim schedule page is now the HOME page! No need to type `/api/`
 
 ### Step 4: Enter Security Code
 - Enter: **9890**

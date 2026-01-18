@@ -6,19 +6,26 @@
 
 ## 📍 Access URLs
 
-### **Main Landing Page (Pilgrim Schedules)**
+### **Main Landing Page (Pilgrim Schedules)** 🏠
 ```
-http://localhost:8000/api/
+http://localhost:8000/
 ```
-👆 **This is your new page!**
+👆 **This is your new HOME page!**
 - Security code: **9890**
 - Enter date and generate schedules
+- **No /api needed!** Opens directly at root
 
 ### Invoice Analytics (Existing)
 ```
 http://localhost:8000/api/invoice/<invoice_id>/
 ```
 👆 Your existing API still works
+
+### API Info
+```
+http://localhost:8000/api-info/
+```
+👆 Old API information endpoint
 
 ### Django Admin
 ```
@@ -42,7 +49,7 @@ python manage.py runserver
 ```
 
 ### 4️⃣ Open Browser
-Go to: `http://localhost:8000/api/`
+Go to: `http://localhost:8000/`
 
 ---
 
@@ -118,7 +125,7 @@ Go to: `http://localhost:8000/api/`
 ## 📋 Test Checklist
 
 ### ✅ Basic Tests
-- [ ] Page loads at `http://localhost:8000/api/`
+- [ ] Page loads at `http://localhost:8000/`
 - [ ] Security code 9890 works
 - [ ] Wrong code shows error
 - [ ] Date input accepts "13-Jan" format
@@ -149,7 +156,7 @@ python manage.py runserver 8080  # Try different port
 
 ### Page Not Loading?
 1. Check if server is running
-2. Verify URL: `http://localhost:8000/api/`
+2. Verify URL: `http://localhost:8000/`
 3. Clear browser cache (Ctrl+Shift+Delete)
 4. Try incognito/private window
 
@@ -190,7 +197,7 @@ You'll know it's working when you see:
 
 ## 💡 Pro Tips
 
-1. **Bookmark the page**: `http://localhost:8000/api/`
+1. **Bookmark the page**: `http://localhost:8000/` (It's now the home page!)
 2. **Security code is in code**: Look for `SECURITY_CODE` in views.py
 3. **Test different dates**: Try various month combinations
 4. **Mobile first**: Test on phone for best experience
@@ -218,5 +225,5 @@ Your professional pilgrim travel schedule system is ready to use!
 **Created**: January 18, 2026  
 **Status**: ✅ Production Ready  
 **Security Code**: 9890  
-**Access URL**: http://localhost:8000/api/
+**Access URL**: http://localhost:8000/ (Root/Home Page)
 
