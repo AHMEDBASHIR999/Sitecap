@@ -217,6 +217,7 @@
             max-height: 600px;
             overflow-y: auto;
             display: none;
+            position: relative;
         }
 
         .schedule-output.show {
@@ -231,6 +232,46 @@
             font-family: 'Consolas', 'Monaco', monospace;
             font-size: 0.95rem;
             line-height: 1.8;
+            margin: 0;
+            padding-right: 10px;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 16px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(10, 95, 56, 0.3);
+            z-index: 10;
+        }
+
+        .copy-btn:hover {
+            background: #1a7a4a;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(10, 95, 56, 0.4);
+        }
+
+        .copy-btn:active {
+            transform: translateY(0);
+        }
+
+        .copy-btn.copied {
+            background: #28a745;
+        }
+
+        .copy-btn .icon {
+            font-size: 1.1rem;
         }
 
         .loading {
@@ -377,6 +418,13 @@
             .schedule-output pre {
                 font-size: 0.85rem;
             }
+
+            .copy-btn {
+                padding: 8px 12px;
+                font-size: 0.85rem;
+                top: 10px;
+                right: 10px;
+            }
         }
 
         @media (max-width: 480px) {
@@ -499,6 +547,10 @@
                 </div>
 
                 <div class="schedule-output" id="scheduleOutput">
+                    <button class="copy-btn" id="copyBtn" onclick="copySchedule()">
+                        <span class="icon">📋</span>
+                        <span id="copyText">Copy</span>
+                    </button>
                     <pre id="scheduleContent"></pre>
                 </div>
             </div>
@@ -621,6 +673,51 @@
                 generateBtn.innerHTML = '🚀 Generate Schedules';
             }
         });
+
+        // Copy Schedule Function
+        function copySchedule() {
+            const scheduleContent = document.getElementById('scheduleContent').textContent;
+            const copyBtn = document.getElementById('copyBtn');
+            const copyText = document.getElementById('copyText');
+            const icon = copyBtn.querySelector('.icon');
+
+            // Copy to clipboard
+            navigator.clipboard.writeText(scheduleContent).then(() => {
+                // Success feedback
+                copyBtn.classList.add('copied');
+                copyText.textContent = 'Copied!';
+                icon.textContent = '✓';
+
+                // Reset after 2 seconds
+                setTimeout(() => {
+                    copyBtn.classList.remove('copied');
+                    copyText.textContent = 'Copy';
+                    icon.textContent = '📋';
+                }, 2000);
+            }).catch(err => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = scheduleContent;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-999999px';
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    copyBtn.classList.add('copied');
+                    copyText.textContent = 'Copied!';
+                    icon.textContent = '✓';
+                    setTimeout(() => {
+                        copyBtn.classList.remove('copied');
+                        copyText.textContent = 'Copy';
+                        icon.textContent = '📋';
+                    }, 2000);
+                } catch (err) {
+                    alert('Failed to copy. Please copy manually.');
+                }
+                document.body.removeChild(textArea);
+            });
+        }
 
         // Auto-focus on security code input
         document.getElementById('securityCode').focus();
