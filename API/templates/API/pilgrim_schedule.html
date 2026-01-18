@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% load static %}
+    <meta name="csrf-token" content="{{ csrf_token }}">
     <title>Pilgrim Travel Schedules - Secure Access</title>
     <style>
         * {
@@ -558,23 +560,28 @@
     </div>
 
     <script>
-        // Get CSRF token from cookie
-        function getCookie(name) {
+        // Get CSRF token from meta tag (more reliable for new browsers)
+        function getCSRFToken() {
+            // Try meta tag first (most reliable)
+            const metaTag = document.querySelector('meta[name="csrf-token"]');
+            if (metaTag) {
+                return metaTag.getAttribute('content');
+            }
+            
+            // Fallback to cookie
             let cookieValue = null;
             if (document.cookie && document.cookie !== '') {
                 const cookies = document.cookie.split(';');
                 for (let i = 0; i < cookies.length; i++) {
                     const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    if (cookie.substring(0, 10) === 'csrftoken=') {
+                        cookieValue = decodeURIComponent(cookie.substring(10));
                         break;
                     }
                 }
             }
             return cookieValue;
         }
-
-        const csrftoken = getCookie('csrftoken');
 
         // Security Form Handler
         document.getElementById('securityForm').addEventListener('submit', async (e) => {
@@ -589,6 +596,12 @@
             errorDiv.classList.remove('show');
 
             try {
+                const csrftoken = getCSRFToken();
+                
+                if (!csrftoken) {
+                    throw new Error('Security token not found. Please refresh the page.');
+                }
+
                 const formData = new FormData();
                 formData.append('action', 'check_code');
                 formData.append('security_code', securityCode);
@@ -600,6 +613,10 @@
                     },
                     body: formData
                 });
+
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.status}`);
+                }
 
                 const data = await response.json();
 
@@ -614,7 +631,8 @@
                     document.getElementById('securityCode').focus();
                 }
             } catch (error) {
-                errorDiv.textContent = 'An error occurred. Please try again.';
+                console.error('Security check error:', error);
+                errorDiv.textContent = error.message || 'An error occurred. Please check your connection and try again.';
                 errorDiv.classList.add('show');
             } finally {
                 submitBtn.disabled = false;
@@ -641,6 +659,12 @@
             loading.classList.add('show');
 
             try {
+                const csrftoken = getCSRFToken();
+                
+                if (!csrftoken) {
+                    throw new Error('Security token not found. Please refresh the page.');
+                }
+
                 const formData = new FormData();
                 formData.append('action', 'generate_schedule');
                 formData.append('date', dateInput);
@@ -652,6 +676,10 @@
                     },
                     body: formData
                 });
+
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.status}`);
+                }
 
                 const data = await response.json();
 
@@ -665,7 +693,8 @@
                     errorDiv.classList.add('show');
                 }
             } catch (error) {
-                errorDiv.textContent = 'An error occurred while generating schedules.';
+                console.error('Schedule generation error:', error);
+                errorDiv.textContent = error.message || 'An error occurred while generating schedules. Please check your connection.';
                 errorDiv.classList.add('show');
             } finally {
                 loading.classList.remove('show');
