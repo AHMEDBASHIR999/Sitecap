@@ -179,9 +179,9 @@ class PilgrimScheduleView(View):
         # ==========================
         def build_schedule(df_f, title, m, static_time=None, static_route=None):
             if df_f.empty:
-                return f"\n{'='*38}\n✨ {title} ✨\n{'='*38}\n❌ NO DATA AVAILABLE\n"
+                return f"\n{'='*26}\n✨ {title} ✨\n{'='*26}\n❌ NO DATA AVAILABLE\n"
             
-            out = [f"\n{'='*38}\n✨ {title} ✨\n{'='*38}\n"]
+            out = [f"\n{'='*26}\n✨ {title} ✨\n{'='*26}\n"]
             for idx, (_, r) in enumerate(df_f.iterrows(), 1):
                 # Handle time: if 'time' key exists in mapping, use column data
                 # Otherwise use only static_time (for f2 schedule)
@@ -194,9 +194,9 @@ class PilgrimScheduleView(View):
                 
                 out.append(
                     f"""
-┌────────────────────────────────────┐
-│ 📋 BOOKING #{idx}                                        
-├────────────────────────────────────┤
+┌────────────────────┐
+ 📋 BOOKING #{idx}                                        
+├────────────────────┤
 📦 Booking     : {r[m['booking']]}
 ⏰ Time        : {time_display}
 {flight_info}🛣️ Route       : {static_route}
@@ -205,7 +205,7 @@ class PilgrimScheduleView(View):
 👤 Client      : {r[m['client']]}
 📱 Mobile      : {r[m['mobile']]}
 🏢 Agent       : {r[m['agent']]}
-└────────────────────────────────────┘
+└────────────────────┘
 """
                 )
             return "".join(out)
@@ -308,12 +308,11 @@ class PilgrimScheduleView(View):
         # Add beautiful header with date
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         header = f"""
-╔════════════════════════════════════╗
+        
     🕌 PILGRIM TRAVEL SCHEDULES 🕌                  
                                                           
     📅 Schedule Date: {input_date_raw.upper()}                                         
                                                          
-╚════════════════════════════════════╝
 """
         
         return header + final_output

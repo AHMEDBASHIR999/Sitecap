@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token }}">
     <title>Pilgrim Travel Schedules - Secure Access</title>
     <style>
         * {
@@ -218,7 +217,6 @@
             max-height: 600px;
             overflow-y: auto;
             display: none;
-            position: relative;
         }
 
         .schedule-output.show {
@@ -233,46 +231,6 @@
             font-family: 'Consolas', 'Monaco', monospace;
             font-size: 0.95rem;
             line-height: 1.8;
-            margin: 0;
-            padding-right: 10px;
-        }
-
-        .copy-btn {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 10px 16px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 8px rgba(10, 95, 56, 0.3);
-            z-index: 10;
-        }
-
-        .copy-btn:hover {
-            background: #1a7a4a;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(10, 95, 56, 0.4);
-        }
-
-        .copy-btn:active {
-            transform: translateY(0);
-        }
-
-        .copy-btn.copied {
-            background: #28a745;
-        }
-
-        .copy-btn .icon {
-            font-size: 1.1rem;
         }
 
         .loading {
@@ -419,13 +377,6 @@
             .schedule-output pre {
                 font-size: 0.85rem;
             }
-
-            .copy-btn {
-                padding: 8px 12px;
-                font-size: 0.85rem;
-                top: 10px;
-                right: 10px;
-            }
         }
 
         @media (max-width: 480px) {
@@ -548,10 +499,6 @@
                 </div>
 
                 <div class="schedule-output" id="scheduleOutput">
-                    <button class="copy-btn" id="copyBtn" onclick="copySchedule()">
-                        <span class="icon">📋</span>
-                        <span id="copyText">Copy</span>
-                    </button>
                     <pre id="scheduleContent"></pre>
                 </div>
             </div>
@@ -559,28 +506,23 @@
     </div>
 
     <script>
-        // Get CSRF token from meta tag (more reliable for iPhone/Safari)
-        function getCSRFToken() {
-            // Try meta tag first (most reliable)
-            const metaTag = document.querySelector('meta[name="csrf-token"]');
-            if (metaTag) {
-                return metaTag.getAttribute('content');
-            }
-            
-            // Fallback to cookie
+        // Get CSRF token from cookie
+        function getCookie(name) {
             let cookieValue = null;
             if (document.cookie && document.cookie !== '') {
                 const cookies = document.cookie.split(';');
                 for (let i = 0; i < cookies.length; i++) {
                     const cookie = cookies[i].trim();
-                    if (cookie.substring(0, 10) === 'csrftoken=') {
-                        cookieValue = decodeURIComponent(cookie.substring(10));
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
                         break;
                     }
                 }
             }
             return cookieValue;
         }
+
+        const csrftoken = getCookie('csrftoken');
 
         // Security Form Handler
         document.getElementById('securityForm').addEventListener('submit', async (e) => {
@@ -595,12 +537,6 @@
             errorDiv.classList.remove('show');
 
             try {
-                const csrftoken = getCSRFToken();
-                
-                if (!csrftoken) {
-                    throw new Error('Security token not found. Please refresh the page.');
-                }
-
                 const formData = new FormData();
                 formData.append('action', 'check_code');
                 formData.append('security_code', securityCode);
@@ -612,10 +548,6 @@
                     },
                     body: formData
                 });
-
-                if (!response.ok) {
-                    throw new Error(`Server error: ${response.status}`);
-                }
 
                 const data = await response.json();
 
@@ -630,8 +562,7 @@
                     document.getElementById('securityCode').focus();
                 }
             } catch (error) {
-                console.error('Security check error:', error);
-                errorDiv.textContent = error.message || 'An error occurred. Please check your connection and try again.';
+                errorDiv.textContent = 'An error occurred. Please try again.';
                 errorDiv.classList.add('show');
             } finally {
                 submitBtn.disabled = false;
@@ -658,12 +589,6 @@
             loading.classList.add('show');
 
             try {
-                const csrftoken = getCSRFToken();
-                
-                if (!csrftoken) {
-                    throw new Error('Security token not found. Please refresh the page.');
-                }
-
                 const formData = new FormData();
                 formData.append('action', 'generate_schedule');
                 formData.append('date', dateInput);
@@ -675,10 +600,6 @@
                     },
                     body: formData
                 });
-
-                if (!response.ok) {
-                    throw new Error(`Server error: ${response.status}`);
-                }
 
                 const data = await response.json();
 
@@ -692,8 +613,7 @@
                     errorDiv.classList.add('show');
                 }
             } catch (error) {
-                console.error('Schedule generation error:', error);
-                errorDiv.textContent = error.message || 'An error occurred while generating schedules. Please check your connection.';
+                errorDiv.textContent = 'An error occurred while generating schedules.';
                 errorDiv.classList.add('show');
             } finally {
                 loading.classList.remove('show');
@@ -701,51 +621,6 @@
                 generateBtn.innerHTML = '🚀 Generate Schedules';
             }
         });
-
-        // Copy Schedule Function
-        function copySchedule() {
-            const scheduleContent = document.getElementById('scheduleContent').textContent;
-            const copyBtn = document.getElementById('copyBtn');
-            const copyText = document.getElementById('copyText');
-            const icon = copyBtn.querySelector('.icon');
-
-            // Copy to clipboard
-            navigator.clipboard.writeText(scheduleContent).then(() => {
-                // Success feedback
-                copyBtn.classList.add('copied');
-                copyText.textContent = 'Copied!';
-                icon.textContent = '✓';
-
-                // Reset after 2 seconds
-                setTimeout(() => {
-                    copyBtn.classList.remove('copied');
-                    copyText.textContent = 'Copy';
-                    icon.textContent = '📋';
-                }, 2000);
-            }).catch(err => {
-                // Fallback for older browsers
-                const textArea = document.createElement('textarea');
-                textArea.value = scheduleContent;
-                textArea.style.position = 'fixed';
-                textArea.style.left = '-999999px';
-                document.body.appendChild(textArea);
-                textArea.select();
-                try {
-                    document.execCommand('copy');
-                    copyBtn.classList.add('copied');
-                    copyText.textContent = 'Copied!';
-                    icon.textContent = '✓';
-                    setTimeout(() => {
-                        copyBtn.classList.remove('copied');
-                        copyText.textContent = 'Copy';
-                        icon.textContent = '📋';
-                    }, 2000);
-                } catch (err) {
-                    alert('Failed to copy. Please copy manually.');
-                }
-                document.body.removeChild(textArea);
-            });
-        }
 
         // Auto-focus on security code input
         document.getElementById('securityCode').focus();
