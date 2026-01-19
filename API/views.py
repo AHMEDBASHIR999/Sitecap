@@ -195,7 +195,7 @@ class PilgrimScheduleView(View):
                 
                 out.append(
                     f"""
-Route     : **{static_route}**
+Route     : *{static_route}*
 Booking   : {r[m['booking']]}
 Time      : {time_display}
 {flight_info}{pickup_info}Drop      : {r[m['drop']]}
@@ -307,7 +307,7 @@ Agent     : {r[m['agent']]}
 
 PILGRIM TRAVEL SCHEDULES             
                                                           
-Schedule Date: **{input_date_raw.upper()}**                                         
+Schedule Date: *{input_date_raw.upper()}*                                         
                                                          
 """
         
