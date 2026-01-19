@@ -179,9 +179,9 @@ class PilgrimScheduleView(View):
         # ==========================
         def build_schedule(df_f, title, m, static_time=None, static_route=None):
             if df_f.empty:
-                return f"\n===== {title} =====\n\nNO MOVEMENTS\n"
+                return f"\n= {title} =\n\nNO MOVEMENTS\n"
             
-            out = [f"\n===== {title} =====\n"]
+            out = [f"\n= {title} =\n"]
             for idx, (_, r) in enumerate(df_f.iterrows(), 1):
                 # Handle time: if 'time' key exists in mapping, use column data
                 # Otherwise use only static_time (for f2 schedule)
@@ -195,14 +195,14 @@ class PilgrimScheduleView(View):
                 
                 out.append(
                     f"""
-Route     : {static_route}
+Route     : **{static_route}**
 Booking   : {r[m['booking']]}
 Time      : {time_display}
 {flight_info}{pickup_info}Drop      : {r[m['drop']]}
 Client    : {r[m['client']]}
 Mobile    : {r[m['mobile']]}
 Agent     : {r[m['agent']]}
-----------------------------------------
+----------------------------------
 """
                 )
             return "".join(out)
@@ -287,7 +287,7 @@ Agent     : {r[m['agent']]}
                 "SCHEDULE 4 – MAKKAH → JED",
                 {
                     "booking": "TR / مواصلات",
-                    "pickup": 21,
+                    "pickup": 21,#column v 
                     "time": "TIME  TO GO AIRPOT / التوقيت ",
                     "drop": "FROM / من/AIRPORT",
                     "client": "FAMILY NAME",
@@ -307,7 +307,7 @@ Agent     : {r[m['agent']]}
 
 PILGRIM TRAVEL SCHEDULES             
                                                           
-Schedule Date: {input_date_raw.upper()}                                         
+Schedule Date: **{input_date_raw.upper()}**                                         
                                                          
 """
         
