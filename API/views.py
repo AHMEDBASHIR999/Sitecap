@@ -179,9 +179,9 @@ class PilgrimScheduleView(View):
         # ==========================
         def build_schedule(df_f, title, m, static_time=None, static_route=None):
             if df_f.empty:
-                return f"\n= {title} =\n\nNO MOVEMENTS\n"
+                return f"\n {title} \n\nNO MOVEMENTS\n"
             
-            out = [f"\n= {title} =\n"]
+            out = [f"\n {title} \n"]
             for idx, (_, r) in enumerate(df_f.iterrows(), 1):
                 # Handle time: if 'time' key exists in mapping, use column data
                 # Otherwise use only static_time (for f2 schedule)
@@ -304,10 +304,8 @@ Agent     : {r[m['agent']]}
         # Add header with date
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         header = f"""
-
-PILGRIM TRAVEL SCHEDULES             
                                                           
-Schedule Date: *{input_date_raw.upper()}*                                         
+*Schedule For {input_date_raw.upper()}*                                         
                                                          
 """
         
