@@ -179,9 +179,9 @@ class PilgrimScheduleView(View):
         # ==========================
         def build_schedule(df_f, title, m, static_time=None, static_route=None):
             if df_f.empty:
-                return f"\n{'='*25}\n {title} \n{'='*25}\n❌ NO DATA AVAILABLE\n"
+                return f"\n===== {title} =====\n\nNO MOVEMENTS\n"
             
-            out = [f"\n{'='*25}\n {title} \n{'='*25}\n"]
+            out = [f"\n===== {title} =====\n"]
             for idx, (_, r) in enumerate(df_f.iterrows(), 1):
                 # Handle time: if 'time' key exists in mapping, use column data
                 # Otherwise use only static_time (for f2 schedule)
@@ -190,22 +190,19 @@ class PilgrimScheduleView(View):
                 else:
                     time_display = static_time if static_time else ""
                 
-                flight_info = f"✈️ Flight      : {r[m['flight']]}\n" if 'flight' in m and r[m['flight']] else ""
+                flight_info = f"Flight    : {r[m['flight']]}\n" if 'flight' in m and r[m['flight']] else ""
+                pickup_info = f"Pickup    : {r[m['pickup']]}\n" if 'pickup' in m else ""
                 
                 out.append(
                     f"""
-┌────────┐
- 📋 BOOKING #{idx}                                        
-├────────┤
-📦 Booking     : {r[m['booking']]}
-⏰ Time        : {time_display}
-{flight_info}🛣️ Route       : {static_route}
-📍 Pickup      : {r[m['pickup']]}
-🎯 Drop        : {r[m['drop']]}
-👤 Client      : {r[m['client']]}
-📱 Mobile      : {r[m['mobile']]}
-🏢 Agent       : {r[m['agent']]}
-└────────┘
+Route     : {static_route}
+Booking   : {r[m['booking']]}
+Time      : {time_display}
+{flight_info}{pickup_info}Drop      : {r[m['drop']]}
+Client    : {r[m['client']]}
+Mobile    : {r[m['mobile']]}
+Agent     : {r[m['agent']]}
+----------------------------------------
 """
                 )
             return "".join(out)
@@ -242,7 +239,6 @@ class PilgrimScheduleView(View):
                 "SCHEDULE 1 – JED → MAKKAH",
                 {
                     "booking": "TR / مواصلات",
-                    "pickup": "FROM / من",
                     "time": "ETA/ موعدالوصول",
                     "drop": "MAKKA HOTEL / مكة فندق",
                     "client": "FAMILY NAME",
@@ -291,7 +287,7 @@ class PilgrimScheduleView(View):
                 "SCHEDULE 4 – MAKKAH → JED",
                 {
                     "booking": "TR / مواصلات",
-                    "pickup": "MAKKA HOTEL / مكة فندق",
+                    "pickup": 21,
                     "time": "TIME  TO GO AIRPOT / التوقيت ",
                     "drop": "FROM / من/AIRPORT",
                     "client": "FAMILY NAME",
@@ -305,13 +301,13 @@ class PilgrimScheduleView(View):
             )
         )
         
-        # Add beautiful header with date
+        # Add header with date
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         header = f"""
 
-🕌 PILGRIM TRAVEL SCHEDULES             
+PILGRIM TRAVEL SCHEDULES             
                                                           
-📅 Schedule Date: {input_date_raw.upper()}                                         
+Schedule Date: {input_date_raw.upper()}                                         
                                                          
 """
         
