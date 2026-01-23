@@ -192,6 +192,7 @@ class PilgrimScheduleView(View):
                 
                 flight_info = f"Flight    : {r[m['flight']]}\n" if 'flight' in m and r[m['flight']] else ""
                 pickup_info = f"Pickup    : {r[m['pickup']]}\n" if 'pickup' in m else ""
+                mobile_display = f"+{r[m['mobile']]}" if r[m['mobile']] and str(r[m['mobile']]).lower() != 'nan' else r[m['mobile']]
                 
                 out.append(
                     f"""
@@ -200,7 +201,7 @@ Booking   : {r[m['booking']]}
 Time      : {time_display}
 {flight_info}{pickup_info}Drop      : {r[m['drop']]}
 Client    : {r[m['client']]}
-Mobile    : {r[m['mobile']]}
+Mobile    : {mobile_display}
 Agent     : {r[m['agent']]}
 ----------------------------------
 """
