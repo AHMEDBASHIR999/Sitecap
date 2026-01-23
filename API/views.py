@@ -191,8 +191,23 @@ class PilgrimScheduleView(View):
                     time_display = static_time if static_time else ""
                 
                 flight_info = f"Flight    : {r[m['flight']]}\n" if 'flight' in m and r[m['flight']] else ""
-                pickup_info = f"Pickup    : {r[m['pickup']]}\n" if 'pickup' in m else ""
-                mobile_display = f"+{r[m['mobile']]}" if r[m['mobile']] and str(r[m['mobile']]).lower() != 'nan' else r[m['mobile']]
+                
+                # Handle pickup - can be string (column name) or int (column index)
+                if 'pickup' in m:
+                    pickup_value = r.iloc[m['pickup']] if isinstance(m['pickup'], int) else r[m['pickup']]
+                    pickup_info = f"Pickup    : {pickup_value}\n"
+                else:
+                    pickup_info = ""
+                
+                # Handle mobile with + prefix, safely handle None/nan values
+                if 'mobile' in m:
+                    mobile_value = r[m['mobile']]
+                    if mobile_value and str(mobile_value).lower() not in ['nan', 'none', '']:
+                        mobile_display = f"+{mobile_value}" if not str(mobile_value).startswith('+') else str(mobile_value)
+                    else:
+                        mobile_display = mobile_value
+                else:
+                    mobile_display = ""
                 
                 out.append(
                     f"""
