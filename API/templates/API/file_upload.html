@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% load static %}
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>File Upload to Google Sheet</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            padding: 24px;
+            color: #e8e8e8;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 {
+            text-align: center;
+            margin-bottom: 24px;
+            font-size: 1.75rem;
+            color: #fff;
+        }
+        .step {
+            background: rgba(255,255,255,0.06);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .step h2 { font-size: 1rem; margin-bottom: 12px; color: #7dd3fc; }
+        .step input[type="text"], .step input[type="url"] {
+            width: 100%;
+            max-width: 560px;
+            padding: 10px 14px;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            background: #1e293b;
+            color: #f1f5f9;
+            font-size: 14px;
+        }
+        .step input[type="file"] {
+            padding: 8px 0;
+            color: #94a3b8;
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        .btn-primary { background: #0ea5e9; color: #fff; }
+        .btn-primary:hover { background: #0284c7; }
+        .btn-secondary { background: #334155; color: #e2e8f0; }
+        .btn-secondary:hover { background: #475569; }
+        .btn-success { background: #10b981; color: #fff; }
+        .btn-success:hover { background: #059669; }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .error-msg {
+            color: #f87171;
+            margin-top: 8px;
+            font-size: 13px;
+        }
+        .success-msg {
+            color: #34d399;
+            margin-top: 8px;
+            font-size: 13px;
+        }
+        .mapping-area {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-top: 20px;
+        }
+        @media (max-width: 768px) { .mapping-area { grid-template-columns: 1fr; } }
+        .panel {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 16px;
+            min-height: 280px;
+        }
+        .panel h3 {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .source-fields, .dest-fields {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .field-chip {
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: grab;
+            user-select: none;
+            border: 1px solid #475569;
+            background: #334155;
+            color: #e2e8f0;
+        }
+        .field-chip.dragging { opacity: 0.5; }
+        .field-chip.mapped { background: #065f46; color: #a7f3d0; border-color: #059669; }
+        .dest-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .dest-row label { min-width: 140px; font-size: 13px; color: #94a3b8; }
+        .mapped-value {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: #065f46;
+            color: #a7f3d0;
+            font-size: 12px;
+        }
+        .mapped-value .unmap {
+            cursor: pointer;
+            color: #f87171;
+            font-weight: bold;
+            padding: 0 4px;
+        }
+        .mapped-value .unmap:hover { color: #fca5a5; }
+        .drop-zone {
+            min-height: 32px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 1px dashed #475569;
+            background: rgba(51,65,85,0.3);
+            font-size: 12px;
+            color: #64748b;
+        }
+        .drop-zone.drag-over { border-color: #0ea5e9; background: rgba(14,165,233,0.15); }
+        .actions {
+            margin-top: 24px;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .confirm-box {
+            margin-top: 20px;
+            padding: 16px;
+            border-radius: 12px;
+            display: none;
+        }
+        .confirm-box.show { display: block; }
+        .confirm-box.success { background: rgba(16,185,129,0.2); border: 1px solid #059669; color: #a7f3d0; }
+        .confirm-box.error { background: rgba(248,113,113,0.2); border: 1px solid #dc2626; color: #fca5a5; }
+        a.back-link { color: #7dd3fc; text-decoration: none; margin-bottom: 16px; display: inline-block; }
+        a.back-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-link">← Back to Home</a>
+        <h1>Upload File to Google Sheet</h1>
+
+        <div class="step">
+            <h2>1. Google Sheet URL</h2>
+            <p style="color:#94a3b8;font-size:13px;margin-bottom:8px;">Paste the link to your sheet (must be shared so “Anyone with the link can view” or “can edit”).</p>
+            <input type="url" id="sheetUrl" placeholder="https://docs.google.com/spreadsheets/d/...">
+            <br>
+            <button type="button" class="btn btn-primary" id="loadSheetBtn">Load Sheet</button>
+            <div id="sheetError" class="error-msg"></div>
+            <div id="sheetSuccess" class="success-msg"></div>
+            <p style="color:#94a3b8;font-size:12px;margin-top:12px;">If Load Sheet fails, enter column names manually (comma-separated):</p>
+            <input type="text" id="manualColumns" placeholder="Owner, Address, City, State, Market, Acres, Price, Date, Flood Zone, Notes, APN" style="width:100%;max-width:560px;margin-top:6px;padding:10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:#f1f5f9;">
+            <button type="button" class="btn btn-secondary" id="loadManualBtn" style="margin-top:8px;">Use Manual Columns</button>
+        </div>
+
+        <div class="step">
+            <h2>2. Upload File</h2>
+            <p style="color:#94a3b8;font-size:13px;margin-bottom:8px;">Upload a CSV or Excel file (.csv, .xlsx, .xls).</p>
+            <input type="file" id="fileInput" accept=".csv,.xlsx,.xls">
+            <br>
+            <button type="button" class="btn btn-primary" id="parseFileBtn" disabled>Parse File</button>
+            <div id="fileError" class="error-msg"></div>
+            <div id="fileSuccess" class="success-msg"></div>
+        </div>
+
+        <div class="step" id="mappingStep" style="display:none;">
+            <h2>3. Map Columns</h2>
+            <p style="color:#94a3b8;font-size:13px;margin-bottom:12px;">Drag a field from the left (your file) onto a field on the right (Google Sheet). Click × to remove a mapping.</p>
+            <div class="mapping-area">
+                <div class="panel">
+                    <h3>📄 Your file columns</h3>
+                    <div class="source-fields" id="sourceFields"></div>
+                </div>
+                <div class="panel">
+                    <h3>📊 Google Sheet columns</h3>
+                    <div id="destFields"></div>
+                </div>
+            </div>
+            <div class="actions">
+                <button type="button" class="btn btn-success" id="uploadBtn">Upload to Sheet</button>
+            </div>
+            <div id="uploadResult" class="confirm-box"></div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+            function getCSRFToken() {
+                if (csrfMeta) return csrfMeta.getAttribute('content');
+                const name = 'csrftoken=';
+                const ca = document.cookie.split(';');
+                for (let i = 0; i < ca.length; i++) {
+                    const c = ca[i].trim();
+                    if (c.indexOf(name) === 0) return c.substring(name.length);
+                }
+                return null;
+            }
+
+            let sheetColumns = [];
+            let fileColumns = [];
+            let mapping = {}; // { sheetCol: fileCol }
+
+            const sheetUrlInput = document.getElementById('sheetUrl');
+            const loadSheetBtn = document.getElementById('loadSheetBtn');
+            const sheetError = document.getElementById('sheetError');
+            const sheetSuccess = document.getElementById('sheetSuccess');
+
+            const fileInput = document.getElementById('fileInput');
+            const parseFileBtn = document.getElementById('parseFileBtn');
+            const fileError = document.getElementById('fileError');
+            const fileSuccess = document.getElementById('fileSuccess');
+
+            const mappingStep = document.getElementById('mappingStep');
+            const sourceFieldsEl = document.getElementById('sourceFields');
+            const destFieldsEl = document.getElementById('destFields');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const uploadResult = document.getElementById('uploadResult');
+
+            function clearMsg(el) { el.textContent = ''; el.className = 'error-msg'; }
+            function showError(el, msg) { el.textContent = msg; el.className = 'error-msg'; el.classList.add('show'); }
+            function showSuccess(el, msg) { el.textContent = msg; el.className = 'success-msg'; el.classList.add('show'); }
+
+            loadSheetBtn.addEventListener('click', async function() {
+                const url = sheetUrlInput.value.trim();
+                clearMsg(sheetError);
+                clearMsg(sheetSuccess);
+                if (!url) { showError(sheetError, 'Please enter a Google Sheet URL.'); return; }
+                loadSheetBtn.disabled = true;
+                loadSheetBtn.textContent = 'Loading...';
+                try {
+                    const formData = new FormData();
+                    formData.append('action', 'get_sheet_columns');
+                    formData.append('sheet_url', url);
+                    formData.append('csrfmiddlewaretoken', getCSRFToken());
+                    const r = await fetch('/file-upload/', { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                    const data = await r.json();
+                    if (data.success) {
+                        sheetColumns = data.columns || [];
+                        showSuccess(sheetSuccess, 'Sheet loaded: ' + sheetColumns.length + ' column(s).');
+                        parseFileBtn.disabled = false;
+                        if (fileColumns.length) renderMapping();
+                    } else {
+                        showError(sheetError, data.error || 'Failed to load sheet.');
+                    }
+                } catch (e) {
+                    showError(sheetError, e.message || 'Request failed.');
+                } finally {
+                    loadSheetBtn.disabled = false;
+                    loadSheetBtn.textContent = 'Load Sheet';
+                }
+            });
+
+            document.getElementById('loadManualBtn').addEventListener('click', async function() {
+                const cols = document.getElementById('manualColumns').value.trim();
+                clearMsg(sheetError);
+                clearMsg(sheetSuccess);
+                if (!cols) { showError(sheetError, 'Enter column names (comma-separated).'); return; }
+                try {
+                    const formData = new FormData();
+                    formData.append('action', 'get_sheet_columns_manual');
+                    formData.append('columns', cols);
+                    formData.append('csrfmiddlewaretoken', getCSRFToken());
+                    const r = await fetch('/file-upload/', { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                    const data = await r.json();
+                    if (data.success) {
+                        sheetColumns = data.columns || [];
+                        showSuccess(sheetSuccess, 'Columns set: ' + sheetColumns.length + ' column(s).');
+                        parseFileBtn.disabled = false;
+                        if (fileColumns.length) { mappingStep.style.display = 'block'; renderMapping(); }
+                    } else {
+                        showError(sheetError, data.error || 'Invalid input.');
+                    }
+                } catch (e) {
+                    showError(sheetError, e.message || 'Request failed.');
+                }
+            });
+
+            fileInput.addEventListener('change', function() { parseFileBtn.disabled = !this.files.length; });
+            parseFileBtn.addEventListener('click', async function() {
+                const file = fileInput.files[0];
+                clearMsg(fileError);
+                clearMsg(fileSuccess);
+                if (!file) { showError(fileError, 'Please select a file.'); return; }
+                parseFileBtn.disabled = true;
+                parseFileBtn.textContent = 'Parsing...';
+                try {
+                    const formData = new FormData();
+                    formData.append('action', 'get_file_columns');
+                    formData.append('file', file);
+                    formData.append('csrfmiddlewaretoken', getCSRFToken());
+                    const r = await fetch('/file-upload/', { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                    const data = await r.json();
+                    if (data.success) {
+                        fileColumns = data.columns || [];
+                        showSuccess(fileSuccess, 'File parsed: ' + fileColumns.length + ' column(s).');
+                        if (sheetColumns.length) { mappingStep.style.display = 'block'; renderMapping(); }
+                    } else {
+                        showError(fileError, data.error || 'Failed to parse file.');
+                    }
+                } catch (e) {
+                    showError(fileError, e.message || 'Request failed.');
+                } finally {
+                    parseFileBtn.disabled = false;
+                    parseFileBtn.textContent = 'Parse File';
+                }
+            });
+
+            function renderMapping() {
+                mapping = {};
+                sourceFieldsEl.innerHTML = '';
+                fileColumns.forEach(function(col) {
+                    const chip = document.createElement('span');
+                    chip.className = 'field-chip';
+                    chip.textContent = col;
+                    chip.draggable = true;
+                    chip.dataset.fileCol = col;
+                    chip.addEventListener('dragstart', function(e) {
+                        e.dataTransfer.setData('text/plain', col);
+                        e.dataTransfer.effectAllowed = 'copy';
+                        chip.classList.add('dragging');
+                    });
+                    chip.addEventListener('dragend', function() { chip.classList.remove('dragging'); });
+                    sourceFieldsEl.appendChild(chip);
+                });
+
+                destFieldsEl.innerHTML = '';
+                sheetColumns.forEach(function(sheetCol) {
+                    const row = document.createElement('div');
+                    row.className = 'dest-row';
+                    row.dataset.sheetCol = sheetCol;
+                    const label = document.createElement('label');
+                    label.textContent = sheetCol;
+                    row.appendChild(label);
+                    const zone = document.createElement('div');
+                    zone.className = 'drop-zone';
+                    zone.dataset.sheetCol = sheetCol;
+                    zone.textContent = 'Drop here';
+                    zone.addEventListener('dragover', function(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; zone.classList.add('drag-over'); });
+                    zone.addEventListener('dragleave', function() { zone.classList.remove('drag-over'); });
+                    zone.addEventListener('drop', function(e) {
+                        e.preventDefault();
+                        zone.classList.remove('drag-over');
+                        const fileCol = e.dataTransfer.getData('text/plain');
+                        if (fileCol) setMapping(sheetCol, fileCol);
+                    });
+                    row.appendChild(zone);
+                    destFieldsEl.appendChild(row);
+                });
+                renderMapped();
+            }
+
+            function setMapping(sheetCol, fileCol) {
+                mapping[sheetCol] = fileCol;
+                renderMapped();
+            }
+
+            function removeMapping(sheetCol) {
+                delete mapping[sheetCol];
+                renderMapped();
+            }
+
+            function renderMapped() {
+                destFieldsEl.querySelectorAll('.dest-row').forEach(function(row) {
+                    const sheetCol = row.dataset.sheetCol;
+                    const mapped = mapping[sheetCol];
+                    const newZone = document.createElement('div');
+                    if (mapped) {
+                        newZone.className = 'mapped-value';
+                        newZone.innerHTML = escapeHtml(mapped) + ' <span class="unmap" title="Remove mapping">×</span>';
+                        newZone.querySelector('.unmap').addEventListener('click', function() { removeMapping(sheetCol); });
+                    } else {
+                        newZone.className = 'drop-zone';
+                        newZone.textContent = 'Drop here';
+                        newZone.dataset.sheetCol = sheetCol;
+                        newZone.addEventListener('dragover', function(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; newZone.classList.add('drag-over'); });
+                        newZone.addEventListener('dragleave', function() { newZone.classList.remove('drag-over'); });
+                        newZone.addEventListener('drop', function(e) {
+                            e.preventDefault();
+                            newZone.classList.remove('drag-over');
+                            const fileCol = e.dataTransfer.getData('text/plain');
+                            if (fileCol) setMapping(sheetCol, fileCol);
+                        });
+                    }
+                    row.replaceChild(newZone, row.lastElementChild);
+                });
+            }
+            function escapeHtml(s) { var div = document.createElement('div'); div.textContent = s; return div.innerHTML; }
+
+            uploadBtn.addEventListener('click', async function() {
+                const url = sheetUrlInput.value.trim();
+                const file = fileInput.files[0];
+                uploadResult.textContent = '';
+                uploadResult.className = 'confirm-box';
+                uploadResult.classList.remove('show', 'success', 'error');
+                if (!url) { uploadResult.textContent = 'Enter the Google Sheet URL for direct upload.'; uploadResult.classList.add('show', 'error'); return; }
+                if (!file) { uploadResult.textContent = 'Please upload a file.'; uploadResult.classList.add('show', 'error'); return; }
+                const keys = Object.keys(mapping);
+                if (!keys.length) { uploadResult.textContent = 'Please map at least one column (drag file column to sheet column).'; uploadResult.classList.add('show', 'error'); return; }
+                uploadBtn.disabled = true;
+                uploadBtn.textContent = 'Uploading...';
+                try {
+                    const formData = new FormData();
+                    formData.append('action', 'upload_to_sheet');
+                    formData.append('sheet_url', url);
+                    formData.append('mapping', JSON.stringify(mapping));
+                    formData.append('file', file);
+                    formData.append('csrfmiddlewaretoken', getCSRFToken());
+                    const r = await fetch('/file-upload/', { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                    const data = await r.json();
+                    uploadResult.classList.add('show');
+                    if (data.success) {
+                        uploadResult.classList.add('success');
+                        uploadResult.textContent = data.message || 'Ready!';
+                        if (data.csv_content) {
+                            var blob = new Blob([data.csv_content], { type: 'text/csv;charset=utf-8;' });
+                            var a = document.createElement('a');
+                            a.href = URL.createObjectURL(blob);
+                            a.download = data.filename || 'mapped_data.csv';
+                            a.click();
+                            URL.revokeObjectURL(a.href);
+                        }
+                    } else {
+                        uploadResult.classList.add('error');
+                        uploadResult.textContent = data.error || 'Upload failed.';
+                    }
+                } catch (e) {
+                    uploadResult.classList.add('show', 'error');
+                    uploadResult.textContent = e.message || 'Request failed.';
+                } finally {
+                    uploadBtn.disabled = false;
+                    uploadBtn.textContent = 'Upload to Sheet';
+                }
+            });
+        })();
+    </script>
+</body>
+</html>

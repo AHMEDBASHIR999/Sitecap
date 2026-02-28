@@ -25,4 +25,8 @@ media/
 .DS_Store
 Thumbs.db
 
+# Secrets (never commit)
+key.json
+.env
+
 

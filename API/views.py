@@ -7,6 +7,7 @@ from django.http import JsonResponse
 from .utils import get_bol_access_token, fetch_invoice_spec, calculate_invoice_totals
 import pandas as pd
 import re
+import requests
 from datetime import datetime
 
 
@@ -326,3 +327,260 @@ Agent     : {r[m['agent']]}
 """
         
         return header + final_output
+
+
+# ---------------------------------------------------------------------------
+# FILE UPLOAD TO GOOGLE SHEET (separate feature - do not modify above logic)
+# ---------------------------------------------------------------------------
+
+def _get_google_creds(scopes):
+    """Get Google credentials from file path or JSON env var (for Vercel/serverless)."""
+    import os
+    import json
+    from django.conf import settings
+    # Option 1: JSON string in env (for Vercel - paste entire key.json content)
+    json_str = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS_JSON')
+    if json_str:
+        try:
+            info = json.loads(json_str)
+            from google.oauth2.service_account import Credentials
+            return Credentials.from_service_account_info(info, scopes=scopes)
+        except (json.JSONDecodeError, KeyError):
+            pass
+    # Option 2: File path (local / .env)
+    creds_path = getattr(settings, 'GOOGLE_SHEETS_CREDENTIALS_PATH', None) or os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
+    if creds_path and not os.path.isabs(creds_path):
+        base = getattr(settings, 'BASE_DIR', None)
+        if base:
+            creds_path = os.path.join(base, creds_path)
+    if creds_path and os.path.isfile(creds_path):
+        from google.oauth2.service_account import Credentials
+        return Credentials.from_service_account_file(creds_path, scopes=scopes)
+    return None
+
+
+def _extract_google_sheet_id(url):
+    """Extract spreadsheet ID from Google Sheet URL (edit or published)."""
+    import re
+    # Published to web: /d/e/2PACX-xxx...
+    m = re.search(r'/d/e/([a-zA-Z0-9_-]+)', url)
+    if m:
+        return ('published', m.group(1))
+    # Standard edit URL: /d/1xxx...
+    m = re.search(r'/d/([a-zA-Z0-9_-]+)', url)
+    if m:
+        return ('edit', m.group(1))
+    return None
+
+
+def _get_sheet_headers_from_csv_export(sheet_id, gid=0):
+    """Fetch first row (headers) from a public Google Sheet via CSV export."""
+    import csv
+    import requests
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/csv,text/plain,*/*',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Referer': 'https://docs.google.com/',
+        'Origin': 'https://docs.google.com',
+    }
+    if isinstance(sheet_id, tuple):
+        url_type, sid = sheet_id
+        if url_type == 'published':
+            url = f"https://docs.google.com/spreadsheets/d/e/{sid}/pub?output=csv"
+        else:
+            url = f"https://docs.google.com/spreadsheets/d/{sid}/export?format=csv&gid={gid}"
+    else:
+        url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&gid={gid}"
+    resp = requests.get(url, headers=headers, timeout=20)
+    resp.raise_for_status()
+    first_line = resp.text.split('\n')[0].strip()
+    if not first_line:
+        return []
+    reader = csv.reader([first_line])
+    return next(reader)
+
+
+class FileUploadView(View):
+    """
+    File Upload page: enter Google Sheet URL, upload file, map columns (drag & drop), then upload to sheet.
+    GET: Show the file upload / mapping page.
+    POST: Actions: get_sheet_columns | get_file_columns | upload_to_sheet
+    """
+
+    def get(self, request):
+        return render(request, 'API/file_upload.html')
+
+    def post(self, request):
+        action = request.POST.get('action') or (request.FILES and request.POST.get('action'))
+
+        # Get CSRF from header or POST
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' and request.method == 'POST':
+            pass  # CSRF still validated by Django
+
+        # -------- Action: get_sheet_columns --------
+        if action == 'get_sheet_columns':
+            sheet_url = (request.POST.get('sheet_url') or '').strip()
+            if not sheet_url:
+                return JsonResponse({'success': False, 'error': 'Google Sheet URL is required.'})
+            sheet_id = _extract_google_sheet_id(sheet_url)
+            if not sheet_id:
+                return JsonResponse({'success': False, 'error': 'Invalid Google Sheet URL. Could not find spreadsheet ID.'})
+            raw_sid = sheet_id[1] if isinstance(sheet_id, tuple) else sheet_id
+            if isinstance(sheet_id, tuple) and sheet_id[0] == 'published':
+                return JsonResponse({'success': False, 'error': 'Use the standard edit URL (not Published to web) for Load Sheet.'})
+
+            # Try service account first (works when sheet is shared with it)
+            creds = _get_google_creds(['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive.readonly'])
+            if creds:
+                try:
+                    import gspread
+                    gc = gspread.authorize(creds)
+                    sh = gc.open_by_key(raw_sid)
+                    ws = sh.sheet1
+                    headers = ws.row_values(1)  # first row
+                    if headers:
+                        return JsonResponse({'success': True, 'columns': headers, 'sheet_id': raw_sid})
+                except Exception as e:
+                    err = str(e)
+                    if 'PERMISSION_DENIED' in err or '403' in err or 'not found' in err.lower():
+                        return JsonResponse({
+                            'success': False,
+                            'error': 'Share your Google Sheet with the service account email (Editor). Find the email in your key.json (client_email).'
+                        })
+                    return JsonResponse({'success': False, 'error': err})
+
+            # Fallback: CSV export (often blocked by Google)
+            try:
+                headers = _get_sheet_headers_from_csv_export(sheet_id)
+                if not headers:
+                    return JsonResponse({'success': False, 'error': 'Could not read sheet.'})
+                return JsonResponse({'success': True, 'columns': headers, 'sheet_id': raw_sid})
+            except requests.exceptions.HTTPError as e:
+                if e.response and e.response.status_code == 400:
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'Set up GOOGLE_APPLICATION_CREDENTIALS or GOOGLE_SHEETS_CREDENTIALS_PATH in .env and share your sheet with the service account email (Editor).'
+                    })
+                return JsonResponse({'success': False, 'error': str(e)})
+            except Exception as e:
+                return JsonResponse({'success': False, 'error': str(e)})
+
+        # -------- Action: get_sheet_columns_manual (fallback when fetch fails) --------
+        if action == 'get_sheet_columns_manual':
+            cols_str = (request.POST.get('columns') or '').strip()
+            if not cols_str:
+                return JsonResponse({'success': False, 'error': 'Enter column names (comma-separated).'})
+            cols = [c.strip() for c in cols_str.split(',') if c.strip()]
+            if not cols:
+                return JsonResponse({'success': False, 'error': 'No valid column names.'})
+            return JsonResponse({'success': True, 'columns': cols})
+
+        # -------- Action: get_file_columns --------
+        if action == 'get_file_columns':
+            f = request.FILES.get('file')
+            if not f:
+                return JsonResponse({'success': False, 'error': 'No file uploaded.'})
+            try:
+                name = (f.name or '').lower()
+                if name.endswith('.csv'):
+                    df = pd.read_csv(f, nrows=0, encoding='utf-8', on_bad_lines='skip')
+                elif name.endswith('.xlsx') or name.endswith('.xls'):
+                    df = pd.read_excel(f, nrows=0, engine='openpyxl' if name.endswith('.xlsx') else None)
+                else:
+                    return JsonResponse({'success': False, 'error': 'Unsupported format. Use CSV or Excel (.xlsx, .xls).'})
+                cols = list(df.columns)
+                return JsonResponse({'success': True, 'columns': cols, 'filename': f.name})
+            except Exception as e:
+                return JsonResponse({'success': False, 'error': str(e)})
+
+        # -------- Action: upload_to_sheet --------
+        if action == 'upload_to_sheet':
+            sheet_url = (request.POST.get('sheet_url') or '').strip()
+            mapping_json = request.POST.get('mapping')  # JSON: { "Sheet Col A": "File Col 1", ... }
+            f = request.FILES.get('file')
+            if not mapping_json or not f:
+                return JsonResponse({'success': False, 'error': 'Missing mapping or file.'})
+            sheet_id = _extract_google_sheet_id(sheet_url) if sheet_url else None
+            try:
+                import json
+                mapping = json.loads(mapping_json)  # { "Sheet Column Name": "File Column Name", ... }
+            except Exception:
+                return JsonResponse({'success': False, 'error': 'Invalid mapping JSON.'})
+
+            try:
+                name = (f.name or '').lower()
+                if name.endswith('.csv'):
+                    df = pd.read_csv(f, dtype=str, encoding='utf-8', on_bad_lines='skip')
+                elif name.endswith('.xlsx') or name.endswith('.xls'):
+                    df = pd.read_excel(f, dtype=str, engine='openpyxl' if name.endswith('.xlsx') else None)
+                else:
+                    return JsonResponse({'success': False, 'error': 'Unsupported file format.'})
+            except Exception as e:
+                return JsonResponse({'success': False, 'error': f'Failed to read file: {e}'})
+
+            # Build rows in the order of the sheet's columns (fetch from sheet if URL provided, else use mapping keys)
+            if sheet_id:
+                try:
+                    sheet_header_order = _get_sheet_headers_from_csv_export(sheet_id)
+                except Exception:
+                    sheet_header_order = list(mapping.keys())
+            else:
+                sheet_header_order = list(mapping.keys())
+            rows = []
+            for _, r in df.iterrows():
+                row = []
+                for sc in sheet_header_order:
+                    fc = mapping.get(sc)
+                    if fc is None:
+                        val = ''
+                    else:
+                        v = r.get(fc, '')
+                        val = v if isinstance(v, str) else (str(v) if pd.notna(v) else '')
+                    row.append(val)
+                rows.append(row)
+
+            if not rows:
+                return JsonResponse({'success': False, 'error': 'No data rows to upload.'})
+
+            # Direct upload to Google Sheet (requires service account - sheet must be shared with it)
+            if not sheet_id:
+                return JsonResponse({'success': False, 'error': 'Google Sheet URL is required for direct upload.'})
+            raw_sheet_id = sheet_id[1] if isinstance(sheet_id, tuple) else sheet_id
+            if isinstance(sheet_id, tuple) and sheet_id[0] == 'published':
+                return JsonResponse({'success': False, 'error': 'Use the standard edit URL (not Published to web) for direct upload.'})
+
+            creds = _get_google_creds(['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive'])
+            if not creds:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Direct upload not configured. Set GOOGLE_APPLICATION_CREDENTIALS_JSON (paste full key.json) in Vercel env, or use GOOGLE_APPLICATION_CREDENTIALS (file path) locally. Share your sheet with the service account email (Editor).'
+                })
+
+            try:
+                import gspread
+                gc = gspread.authorize(creds)
+                sh = gc.open_by_key(raw_sheet_id)
+                ws = sh.sheet1
+                # Append data rows (sheet already has header row)
+                ws.append_rows(rows, value_input_option='USER_ENTERED')
+                return JsonResponse({
+                    'success': True,
+                    'message': f'Successfully uploaded {len(rows)} row(s) directly to your Google Sheet!',
+                    'row_count': len(rows)
+                })
+            except ImportError:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Install gspread and google-auth: pip install gspread google-auth'
+                })
+            except Exception as e:
+                err = str(e)
+                if 'PERMISSION_DENIED' in err or '403' in err or 'not found' in err.lower():
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'Share your Google Sheet with the service account email (Editor). Find the email in your credentials JSON (client_email).'
+                    })
+                return JsonResponse({'success': False, 'error': err})
+
+        return JsonResponse({'success': False, 'error': 'Invalid action.'})

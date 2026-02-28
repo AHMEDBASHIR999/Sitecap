@@ -2,5 +2,9 @@ django==5.0.7
 djangorestframework
 requests
 pandas
+openpyxl
+gspread
+google-auth
+python-dotenv
 
 

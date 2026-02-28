@@ -11,6 +11,14 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
+import os
+
+# Load .env into environment (for GOOGLE_APPLICATION_CREDENTIALS etc.)
+try:
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).resolve().parent.parent / '.env')
+except ImportError:
+    pass
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -139,3 +147,17 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Google Sheets direct upload (File Upload page)
+# Path to service account JSON. Share your sheet with the service account email (client_email in JSON) as Editor.
+_env_creds = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
+if _env_creds and os.path.isfile(_env_creds):
+    GOOGLE_SHEETS_CREDENTIALS_PATH = os.path.abspath(_env_creds)
+elif _env_creds and os.path.isfile(os.path.join(BASE_DIR, _env_creds)):
+    GOOGLE_SHEETS_CREDENTIALS_PATH = os.path.abspath(os.path.join(BASE_DIR, _env_creds))
+elif (BASE_DIR / 'key.json').exists():
+    GOOGLE_SHEETS_CREDENTIALS_PATH = str(BASE_DIR / 'key.json')
+elif (BASE_DIR.parent / 'key.json').exists():
+    GOOGLE_SHEETS_CREDENTIALS_PATH = str(BASE_DIR.parent / 'key.json')
+else:
+    GOOGLE_SHEETS_CREDENTIALS_PATH = None
