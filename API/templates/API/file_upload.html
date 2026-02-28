@@ -431,6 +431,7 @@
                     formData.append('action', 'upload_to_sheet');
                     formData.append('sheet_url', url);
                     formData.append('mapping', JSON.stringify(mapping));
+                    formData.append('sheet_columns', JSON.stringify(sheetColumns));
                     formData.append('file', file);
                     formData.append('csrfmiddlewaretoken', getCSRFToken());
                     const r = await fetch('/file-upload/', { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } });

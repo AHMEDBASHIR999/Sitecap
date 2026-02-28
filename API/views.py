@@ -498,6 +498,7 @@ class FileUploadView(View):
         if action == 'upload_to_sheet':
             sheet_url = (request.POST.get('sheet_url') or '').strip()
             mapping_json = request.POST.get('mapping')  # JSON: { "Sheet Col A": "File Col 1", ... }
+            sheet_columns_json = request.POST.get('sheet_columns')  # Full list of sheet columns in order
             f = request.FILES.get('file')
             if not mapping_json or not f:
                 return JsonResponse({'success': False, 'error': 'Missing mapping or file.'})
@@ -519,14 +520,32 @@ class FileUploadView(View):
             except Exception as e:
                 return JsonResponse({'success': False, 'error': f'Failed to read file: {e}'})
 
-            # Build rows in the order of the sheet's columns (fetch from sheet if URL provided, else use mapping keys)
-            if sheet_id:
+            # Build rows in the FULL sheet column order - skipped mappings get empty string to avoid misalignment
+            if sheet_columns_json:
+                try:
+                    sheet_header_order = json.loads(sheet_columns_json)
+                except Exception:
+                    sheet_header_order = None
+            else:
+                sheet_header_order = None
+            if not sheet_header_order and sheet_id:
                 try:
                     sheet_header_order = _get_sheet_headers_from_csv_export(sheet_id)
                 except Exception:
-                    sheet_header_order = list(mapping.keys())
-            else:
-                sheet_header_order = list(mapping.keys())
+                    pass
+            if not sheet_header_order:
+                try:
+                    creds = _get_google_creds(['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive.readonly'])
+                    if creds and sheet_id:
+                        raw_sid = sheet_id[1] if isinstance(sheet_id, tuple) else sheet_id
+                        import gspread
+                        gc = gspread.authorize(creds)
+                        sh = gc.open_by_key(raw_sid)
+                        sheet_header_order = sh.sheet1.row_values(1)
+                except Exception:
+                    pass
+            if not sheet_header_order:
+                sheet_header_order = list(mapping.keys())  # fallback - may cause misalignment if mappings skipped
             rows = []
             for _, r in df.iterrows():
                 row = []
