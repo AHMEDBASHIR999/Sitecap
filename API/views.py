@@ -373,6 +373,30 @@ def _extract_google_sheet_id(url):
     return None
 
 
+def _extract_gid(url):
+    """Extract worksheet gid from Google Sheet URL (?gid=123 or #gid=123). Uses that tab instead of first sheet."""
+    import re
+    if not url:
+        return None
+    m = re.search(r'[?#]gid=(\d+)', url)
+    if m:
+        try:
+            return int(m.group(1))
+        except ValueError:
+            return None
+    return None
+
+
+def _get_worksheet(sh, gid=None):
+    """Return worksheet by gid if given, else first sheet."""
+    if gid is not None:
+        try:
+            return sh.get_worksheet_by_id(gid)
+        except (Exception, AttributeError):
+            pass
+    return sh.sheet1
+
+
 def _get_sheet_headers_from_csv_export(sheet_id, gid=0):
     """Fetch first row (headers) from a public Google Sheet via CSV export."""
     import csv
@@ -430,6 +454,7 @@ class FileUploadView(View):
             if isinstance(sheet_id, tuple) and sheet_id[0] == 'published':
                 return JsonResponse({'success': False, 'error': 'Use the standard edit URL (not Published to web) for Load Sheet.'})
 
+            gid = _extract_gid(sheet_url)
             # Try service account first (works when sheet is shared with it)
             creds = _get_google_creds(['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive.readonly'])
             if creds:
@@ -437,7 +462,7 @@ class FileUploadView(View):
                     import gspread
                     gc = gspread.authorize(creds)
                     sh = gc.open_by_key(raw_sid)
-                    ws = sh.sheet1
+                    ws = _get_worksheet(sh, gid)
                     headers = ws.row_values(1)  # first row
                     if headers:
                         return JsonResponse({'success': True, 'columns': headers, 'sheet_id': raw_sid})
@@ -452,7 +477,8 @@ class FileUploadView(View):
 
             # Fallback: CSV export (often blocked by Google)
             try:
-                headers = _get_sheet_headers_from_csv_export(sheet_id)
+                csv_gid = gid if gid is not None else 0
+                headers = _get_sheet_headers_from_csv_export(sheet_id, gid=csv_gid)
                 if not headers:
                     return JsonResponse({'success': False, 'error': 'Could not read sheet.'})
                 return JsonResponse({'success': True, 'columns': headers, 'sheet_id': raw_sid})
@@ -503,6 +529,7 @@ class FileUploadView(View):
             if not mapping_json or not f:
                 return JsonResponse({'success': False, 'error': 'Missing mapping or file.'})
             sheet_id = _extract_google_sheet_id(sheet_url) if sheet_url else None
+            gid_upload = _extract_gid(sheet_url) if sheet_url else None
             try:
                 import json
                 mapping = json.loads(mapping_json)  # { "Sheet Column Name": "File Column Name", ... }
@@ -530,7 +557,8 @@ class FileUploadView(View):
                 sheet_header_order = None
             if not sheet_header_order and sheet_id:
                 try:
-                    sheet_header_order = _get_sheet_headers_from_csv_export(sheet_id)
+                    csv_gid = gid_upload if gid_upload is not None else 0
+                    sheet_header_order = _get_sheet_headers_from_csv_export(sheet_id, gid=csv_gid)
                 except Exception:
                     pass
             if not sheet_header_order:
@@ -541,7 +569,8 @@ class FileUploadView(View):
                         import gspread
                         gc = gspread.authorize(creds)
                         sh = gc.open_by_key(raw_sid)
-                        sheet_header_order = sh.sheet1.row_values(1)
+                        ws_fetch = _get_worksheet(sh, gid_upload)
+                        sheet_header_order = ws_fetch.row_values(1)
                 except Exception:
                     pass
             if not sheet_header_order:
@@ -580,7 +609,7 @@ class FileUploadView(View):
                 import gspread
                 gc = gspread.authorize(creds)
                 sh = gc.open_by_key(raw_sheet_id)
-                ws = sh.sheet1
+                ws = _get_worksheet(sh, gid_upload)
                 # Append data rows (sheet already has header row)
                 ws.append_rows(rows, value_input_option='USER_ENTERED')
                 return JsonResponse({
