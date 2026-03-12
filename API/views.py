@@ -9,6 +9,12 @@ import pandas as pd
 import re
 import requests
 from datetime import datetime
+import os
+import time
+import hmac
+import hashlib
+import base64
+import json
 
 
 class RootView(APIView):
@@ -632,3 +638,108 @@ class FileUploadView(View):
                 return JsonResponse({'success': False, 'error': err})
 
         return JsonResponse({'success': False, 'error': 'Invalid action.'})
+
+
+class OnOfficeImagesView(APIView):
+    """
+    GET /api/onoffice/images/<estate_id>/
+
+    Query params (optional):
+      - category: onOffice picture category (default: Foto)
+
+    Returns both:
+      - webflow_images: [{\"url\": \"...\"}, ...]
+      - images: {\"image1\": \"...\", \"image2\": \"...\", ...}
+    """
+
+    def get(self, request, estate_id: int):
+        token = os.environ.get("ONOFFICE_TOKEN")
+        secret = os.environ.get("ONOFFICE_SECRET")
+        if not token or not secret:
+            return Response(
+                {
+                    "success": False,
+                    "error": "ONOFFICE_TOKEN or ONOFFICE_SECRET not set in environment."
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        category = request.query_params.get("category", "Foto")
+
+        timestamp = str(int(time.time()))
+        actionid = "urn:onoffice-de-ns:smart:2.5:smartml:action:get"
+        resourcetype = "estatepictures"
+        resourceid = ""
+
+        data = timestamp + token + resourcetype + actionid + resourceid
+
+        signature = base64.b64encode(
+            hmac.new(secret.encode(), data.encode(), hashlib.sha256).digest()
+        ).decode()
+
+        payload = {
+            "token": token,
+            "request": {
+                "actions": [
+                    {
+                        "actionid": actionid,
+                        "resourceid": resourceid,
+                        "resourcetype": resourcetype,
+                        "timestamp": timestamp,
+                        "hmac_version": "2",
+                        "hmac": signature,
+                        "parameters": {
+                            "estateids": [int(estate_id)],
+                            "categories": [category],
+                        },
+                    }
+                ]
+            },
+        }
+
+        try:
+            resp = requests.post(
+                "https://api.onoffice.de/api/stable/api.php",
+                json=payload,
+                timeout=20,
+            )
+            resp.raise_for_status()
+            response_json = resp.json()
+        except Exception as e:
+            return Response(
+                {"success": False, "error": f"Request to onOffice failed: {e}"},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        try:
+            results = (
+                response_json.get("response", {})
+                .get("results", [])[0]
+                .get("data", {})
+                .get("records", [])
+            )
+        except (IndexError, AttributeError):
+            results = []
+
+        image_urls = []
+        for record in results:
+            for element in record.get("elements", []):
+                url = element.get("url")
+                if url:
+                    image_urls.append(url)
+
+        webflow_images = [{"url": u} for u in image_urls]
+        flat_images = {f"image{i+1}": u for i, u in enumerate(image_urls)}
+
+        return Response(
+            {
+                "success": True,
+                "estate_id": estate_id,
+                "category": category,
+                "count": len(image_urls),
+                "webflow_images": webflow_images,
+                "images": flat_images,
+            },
+            status=status.HTTP_200_OK,
+        )
+
