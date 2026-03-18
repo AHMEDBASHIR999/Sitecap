@@ -691,6 +691,7 @@ class OnOfficeImagesView(APIView):
                         "parameters": {
                             "estateids": [int(estate_id)],
                             "categories": [category],
+                            "size":"1200x900",
                         },
                     }
                 ]
