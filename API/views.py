@@ -664,7 +664,16 @@ class OnOfficeImagesView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-        category = request.query_params.get("category", "Foto")
+        # Supports:
+        # - ?category=Foto&category=Titelbild
+        # - ?category=Foto,Titelbild
+        raw_categories = request.query_params.getlist("category")
+        if len(raw_categories) == 1 and "," in raw_categories[0]:
+            categories = [c.strip() for c in raw_categories[0].split(",") if c.strip()]
+        else:
+            categories = [c.strip() for c in raw_categories if c.strip()]
+        if not categories:
+            categories = ["Foto"]
 
         timestamp = str(int(time.time()))
         actionid = "urn:onoffice-de-ns:smart:2.5:smartml:action:get"
@@ -690,7 +699,7 @@ class OnOfficeImagesView(APIView):
                         "hmac": signature,
                         "parameters": {
                             "estateids": [int(estate_id)],
-                            "categories": [category],
+                            "categories": categories,
                             "size":"1200x900",
                         },
                     }
@@ -736,7 +745,7 @@ class OnOfficeImagesView(APIView):
             {
                 "success": True,
                 "estate_id": estate_id,
-                "category": category,
+                "categories": categories,
                 "count": len(image_urls),
                 "webflow_images": webflow_images,
                 "images": flat_images,
