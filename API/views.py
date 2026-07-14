@@ -98,7 +98,7 @@ class PilgrimScheduleView(View):
     
     def get(self, request):
         """Display the landing page"""
-        unlocked = request.session.get('unlocked', False)
+        unlocked = request.get_signed_cookie('unlocked', default='false', salt='pilgrim_secret') == 'true'
         return render(request, 'API/pilgrim_schedule.html', {'unlocked': unlocked})
     
     def post(self, request):
@@ -109,8 +109,9 @@ class PilgrimScheduleView(View):
         if action == 'check_code':
             code = request.POST.get('security_code', '')
             if code == self.SECURITY_CODE:
-                request.session['unlocked'] = True
-                return JsonResponse({'success': True})
+                response = JsonResponse({'success': True})
+                response.set_signed_cookie('unlocked', 'true', salt='pilgrim_secret', max_age=86400, httponly=True)
+                return response
             else:
                 return JsonResponse({'success': False, 'error': 'Invalid security code'})
         
@@ -768,7 +769,7 @@ class VoucherDataEntryView(View):
     GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1F475ZKlJ3OdcMmqnaVJki91OlOikX78mHwKa1fPCD9s/edit?usp=sharing"
 
     def get(self, request):
-        unlocked = request.session.get('unlocked', False)
+        unlocked = request.get_signed_cookie('unlocked', default='false', salt='pilgrim_secret') == 'true'
         columns = []
         error = None
         if unlocked:
@@ -799,7 +800,7 @@ class VoucherDataEntryView(View):
         })
         
     def post(self, request):
-        unlocked = request.session.get('unlocked', False)
+        unlocked = request.get_signed_cookie('unlocked', default='false', salt='pilgrim_secret') == 'true'
         if not unlocked:
             return JsonResponse({'success': False, 'error': 'Secure access required. Please unlock first.'})
             
