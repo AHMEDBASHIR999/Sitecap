@@ -5,6 +5,7 @@ from django.views import View
 from django.shortcuts import render
 from django.http import JsonResponse
 from .utils import get_bol_access_token, fetch_invoice_spec, calculate_invoice_totals
+from .pdf_parsers import extract_travel_to_haram
 import pandas as pd
 import re
 import requests
@@ -15,6 +16,7 @@ import hmac
 import hashlib
 import base64
 import json
+import io
 
 
 class RootView(APIView):
@@ -96,7 +98,8 @@ class PilgrimScheduleView(View):
     
     def get(self, request):
         """Display the landing page"""
-        return render(request, 'API/pilgrim_schedule.html')
+        unlocked = request.session.get('unlocked', False)
+        return render(request, 'API/pilgrim_schedule.html', {'unlocked': unlocked})
     
     def post(self, request):
         """Handle security code check and schedule generation"""
@@ -106,6 +109,7 @@ class PilgrimScheduleView(View):
         if action == 'check_code':
             code = request.POST.get('security_code', '')
             if code == self.SECURITY_CODE:
+                request.session['unlocked'] = True
                 return JsonResponse({'success': True})
             else:
                 return JsonResponse({'success': False, 'error': 'Invalid security code'})
@@ -752,4 +756,159 @@ class OnOfficeImagesView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+class VoucherDataEntryView(View):
+    """
+    Voucher Data Entry page: Select agent, upload PDF, extract data, map & save to Google Sheet.
+    GET: Render the data entry form.
+    POST: Action handlers: parse_voucher | save_voucher
+    """
+    
+    GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1F475ZKlJ3OdcMmqnaVJki91OlOikX78mHwKa1fPCD9s/edit?usp=sharing"
+
+    def get(self, request):
+        unlocked = request.session.get('unlocked', False)
+        columns = []
+        error = None
+        if unlocked:
+            sheet_id = _extract_google_sheet_id(self.GOOGLE_SHEET_URL)
+            if sheet_id:
+                raw_sid = sheet_id[1] if isinstance(sheet_id, tuple) else sheet_id
+                gid = _extract_gid(self.GOOGLE_SHEET_URL)
+                creds = _get_google_creds(['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive.readonly'])
+                if creds:
+                    try:
+                        import gspread
+                        gc = gspread.authorize(creds)
+                        sh = gc.open_by_key(raw_sid)
+                        ws = _get_worksheet(sh, gid)
+                        columns = ws.row_values(1)
+                    except Exception as e:
+                        error = f"Error loading Google Sheet columns: {str(e)}"
+                else:
+                    error = "Google Sheet credentials (key.json) not configured."
+            else:
+                error = "Invalid Google Sheet URL configured."
+                
+        return render(request, 'API/voucher_data_entry.html', {
+            'unlocked': unlocked,
+            'columns': columns,
+            'sheet_url': self.GOOGLE_SHEET_URL,
+            'error': error
+        })
+        
+    def post(self, request):
+        unlocked = request.session.get('unlocked', False)
+        if not unlocked:
+            return JsonResponse({'success': False, 'error': 'Secure access required. Please unlock first.'})
+            
+        action = request.POST.get('action')
+        
+        # -------- Action: load_sheet --------
+        if action == 'load_sheet':
+            sheet_url = (request.POST.get('sheet_url') or '').strip()
+            if not sheet_url:
+                return JsonResponse({'success': False, 'error': 'Google Sheet URL is required.'})
+            sheet_id = _extract_google_sheet_id(sheet_url)
+            if not sheet_id:
+                return JsonResponse({'success': False, 'error': 'Invalid Google Sheet URL.'})
+            raw_sid = sheet_id[1] if isinstance(sheet_id, tuple) else sheet_id
+            gid = _extract_gid(sheet_url)
+            
+            creds = _get_google_creds(['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive.readonly'])
+            if not creds:
+                return JsonResponse({'success': False, 'error': 'Google credentials not configured.'})
+                
+            try:
+                import gspread
+                gc = gspread.authorize(creds)
+                sh = gc.open_by_key(raw_sid)
+                ws = _get_worksheet(sh, gid)
+                headers = ws.row_values(1)
+                if headers:
+                    return JsonResponse({'success': True, 'columns': headers})
+                return JsonResponse({'success': False, 'error': 'No columns found in the sheet.'})
+            except Exception as e:
+                err = str(e)
+                if 'PERMISSION_DENIED' in err or '403' in err or 'not found' in err.lower():
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'Permission denied. Share your Google Sheet with the service account email (Editor).'
+                    })
+                return JsonResponse({'success': False, 'error': err})
+
+        # -------- Action: parse_voucher --------
+        if action == 'parse_voucher':
+            pdf_file = request.FILES.get('pdf_file')
+            agent_name = request.POST.get('agent_name')
+            
+            if not pdf_file:
+                return JsonResponse({'success': False, 'error': 'No file uploaded.'})
+            
+            try:
+                pdf_data = io.BytesIO(pdf_file.read())
+                if agent_name == 'Travel to Haram':
+                    data = extract_travel_to_haram(pdf_data)
+                else:
+                    return JsonResponse({'success': False, 'error': f'Unsupported agent: {agent_name}'})
+                    
+                return JsonResponse({'success': True, 'data': data})
+            except Exception as e:
+                return JsonResponse({'success': False, 'error': f'Parsing error: {str(e)}'})
+                
+        # -------- Action: save_voucher --------
+        elif action == 'save_voucher':
+            sheet_url = (request.POST.get('sheet_url') or '').strip()
+            if not sheet_url:
+                sheet_url = self.GOOGLE_SHEET_URL
+                
+            sheet_id = _extract_google_sheet_id(sheet_url)
+            if not sheet_id:
+                return JsonResponse({'success': False, 'error': 'Invalid Google Sheet URL.'})
+                
+            raw_sheet_id = sheet_id[1] if isinstance(sheet_id, tuple) else sheet_id
+            gid = _extract_gid(sheet_url)
+            
+            try:
+                sheet_columns = json.loads(request.POST.get('sheet_columns', '[]'))
+                row_dict = json.loads(request.POST.get('row_data', '{}'))
+            except Exception:
+                return JsonResponse({'success': False, 'error': 'Invalid data format.'})
+                
+            if not sheet_columns:
+                return JsonResponse({'success': False, 'error': 'No sheet columns found for mapping.'})
+                
+            # Align row values with the sheet columns order
+            row = []
+            for col in sheet_columns:
+                row.append(row_dict.get(col, ''))
+                
+            creds = _get_google_creds([
+                'https://www.googleapis.com/auth/spreadsheets',
+                'https://www.googleapis.com/auth/drive'
+            ])
+            if not creds:
+                return JsonResponse({'success': False, 'error': 'Google Sheet credentials not configured.'})
+                
+            try:
+                import gspread
+                gc = gspread.authorize(creds)
+                sh = gc.open_by_key(raw_sheet_id)
+                ws = _get_worksheet(sh, gid)
+                ws.append_rows([row], value_input_option='USER_ENTERED')
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Successfully saved voucher data directly to your Google Sheet!'
+                })
+            except Exception as e:
+                err = str(e)
+                if 'PERMISSION_DENIED' in err or '403' in err or 'not found' in err.lower():
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'Permission denied. Share your Google Sheet with the service account email (Editor).'
+                    })
+                return JsonResponse({'success': False, 'error': err})
+                
+        return JsonResponse({'success': False, 'error': 'Invalid action.'})
 

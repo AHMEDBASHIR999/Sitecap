@@ -6,5 +6,4 @@ openpyxl
 gspread
 google-auth
 python-dotenv
-
-
+pypdf
