@@ -13,11 +13,13 @@ A fully responsive, professional, and attractive landing page for managing pilgr
    - Date input field for generating schedules
    - Supports flexible date formats (e.g., 13-Jan, JAN-13)
    - Real-time schedule generation from Google Sheets
-   - Beautiful display of 4 different schedule types:
+   - Beautiful display of 6 different schedule types:
      - Schedule 1: JED → MAKKAH
      - Schedule 2: MAKKAH → MADINAH
      - Schedule 3: MADINAH → AIRPORT
      - Schedule 4: MAKKAH → JED
+     - Schedule 5: MAKKAH ZIARAT
+     - Schedule 6: MADINA ZIARAT
 
 ### 3. **Professional Design**
    - ✨ Fully responsive (mobile, tablet, desktop)

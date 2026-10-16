@@ -186,6 +186,11 @@ class PilgrimScheduleView(View):
         df["DAY_CHOUT_2"] = (df["CH OUT"])
         df["DAY_DP"] = extract_day(df["DP DATE / مغادره تاريخ"])
         
+        makkah_mazarat_col = "MAKKAH MAZARAT" if "MAKKAH MAZARAT" in df.columns else df.columns[33]
+        madinah_mazarat_col = "MADINAH MAZARAT" if "MADINAH MAZARAT" in df.columns else df.columns[34]
+        df["DAY_MAKKAH_MAZARAT"] = df[makkah_mazarat_col]
+        df["DAY_MADINAH_MAZARAT"] = df[madinah_mazarat_col]
+        
         # ==========================
         # SCHEDULE BUILDER
         # ==========================
@@ -211,6 +216,13 @@ class PilgrimScheduleView(View):
                 else:
                     pickup_info = ""
                 
+                # Handle drop - optional, only added if present in mapping
+                if 'drop' in m:
+                    drop_value = r.iloc[m['drop']] if isinstance(m['drop'], int) else r[m['drop']]
+                    drop_info = f"Drop      : {drop_value}\n"
+                else:
+                    drop_info = ""
+                
                 # Handle mobile with + prefix, safely handle None/nan values
                 if 'mobile' in m:
                     mobile_value = r[m['mobile']]
@@ -226,8 +238,7 @@ class PilgrimScheduleView(View):
 Route     : *{static_route}*
 Booking   : {r[m['booking']]}
 Time      : {time_display}
-{flight_info}{pickup_info}Drop      : {r[m['drop']]}
-Client    : {r[m['client']]}
+{flight_info}{pickup_info}{drop_info}Client    : {r[m['client']]}
 Mobile    : {mobile_display}
 Agent     : {r[m['agent']]}
 ----------------------------------
@@ -257,6 +268,22 @@ Agent     : {r[m['agent']]}
         # FILTER 4 – MAKKAH → JED
         # ==========================
         f4 = df[df["DAY_CHOUT_2"] == input_date_raw]
+        
+        # ==========================
+        # FILTER 5 – MAKKAH ZIARAT
+        # ==========================
+        f5 = df[
+            (df["DAY_MAKKAH_MAZARAT"] == input_date_raw) |
+            (df["DAY_MAKKAH_MAZARAT"].fillna("").str.strip().str.lower() == input_date_raw.strip().lower())
+        ]
+        
+        # ==========================
+        # FILTER 6 – MADINA ZIARAT
+        # ==========================
+        f6 = df[
+            (df["DAY_MADINAH_MAZARAT"] == input_date_raw) |
+            (df["DAY_MADINAH_MAZARAT"].fillna("").str.strip().str.lower() == input_date_raw.strip().lower())
+        ]
         
         # ==========================
         # BUILD FINAL OUTPUT
@@ -325,7 +352,34 @@ Agent     : {r[m['agent']]}
                 },
                 static_time="TO GO AIRPORT",
                 static_route="MAKKAH → JED"
-
+            )
+            +
+            build_schedule(
+                f5,
+                "SCHEDULE 5 – MAKKAH ZIARAT",
+                {
+                    "booking": "TR / مواصلات",
+                    "pickup": "MAKKA HOTEL / مكة فندق",
+                    "client": "FAMILY NAME",
+                    "mobile": "MOBILE NO.",
+                    "agent": "AGENT NAME / اسم وكيل"
+                },
+                static_time="8:00",
+                static_route="MAKKAH ZIARAT"
+            )
+            +
+            build_schedule(
+                f6,
+                "SCHEDULE 6 – MADINA ZIARAT",
+                {
+                    "booking": "TR / مواصلات",
+                    "pickup": "MEDINAH HOTEL / مدينه فندق",
+                    "client": "FAMILY NAME",
+                    "mobile": "MOBILE NO.",
+                    "agent": "AGENT NAME / اسم وكيل"
+                },
+                static_time="8:00",
+                static_route="MADINA ZIARAT"
             )
         )
         
