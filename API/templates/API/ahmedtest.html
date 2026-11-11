@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>AhmedTest - Realtime Haptic & Vibration Sync</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: rgba(22, 30, 49, 0.75);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --primary: #06b6d4;
+      --primary-glow: rgba(6, 182, 212, 0.4);
+      --accent: #f43f5e;
+      --accent-glow: rgba(244, 63, 94, 0.45);
+      --success: #10b981;
+      --warning: #f59e0b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      background: radial-gradient(circle at top, #131b2e 0%, #070a12 100%);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+
+    /* Screen shake animation for incoming vibrations */
+    @keyframes screenVibrate {
+      0% { transform: translate(0, 0) rotate(0deg); }
+      15% { transform: translate(-3px, 3px) rotate(-0.5deg); }
+      30% { transform: translate(3px, -3px) rotate(0.5deg); }
+      45% { transform: translate(-4px, -1px) rotate(-0.5deg); }
+      60% { transform: translate(4px, 2px) rotate(0.5deg); }
+      75% { transform: translate(-2px, -3px) rotate(0deg); }
+      90% { transform: translate(2px, 3px) rotate(0.5deg); }
+      100% { transform: translate(0, 0) rotate(0deg); }
+    }
+
+    body.vibrating {
+      animation: screenVibrate 0.12s infinite;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 18px 16px calc(24px + env(safe-area-inset-bottom, 16px));
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      width: 100%;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+      padding-top: env(safe-area-inset-top, 6px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 0 16px var(--primary-glow);
+    }
+
+    .brand-title {
+      font-size: 19px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(90deg, #ffffff, #cbd5e1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .device-pill {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .device-pill .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--text-muted);
+    }
+
+    .device-pill.connected {
+      background: rgba(16, 185, 129, 0.12);
+      border-color: rgba(16, 185, 129, 0.3);
+      color: #34d399;
+    }
+    .device-pill.connected .dot {
+      background: #34d399;
+      box-shadow: 0 0 8px #34d399;
+    }
+
+    /* Pairing Card */
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 22px 18px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      line-height: 1.45;
+    }
+
+    /* PIN Code Input Box */
+    .pin-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .pin-input-wrap {
+      position: relative;
+    }
+
+    .pin-input {
+      width: 100%;
+      background: rgba(10, 15, 27, 0.85);
+      border: 2px solid rgba(6, 182, 212, 0.3);
+      border-radius: 14px;
+      padding: 14px 18px;
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: 6px;
+      text-align: center;
+      color: #fff;
+      font-family: 'JetBrains Mono', monospace;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .pin-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 20px var(--primary-glow);
+    }
+
+    .quick-codes {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .quick-code-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      padding: 6px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.15s;
+    }
+
+    .quick-code-btn:active {
+      transform: scale(0.95);
+      background: rgba(6, 182, 212, 0.2);
+      color: #fff;
+    }
+
+    .btn-connect {
+      width: 100%;
+      background: linear-gradient(135deg, #06b6d4, #0284c7);
+      border: none;
+      border-radius: 14px;
+      padding: 16px;
+      color: #ffffff;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      cursor: pointer;
+      box-shadow: 0 10px 25px rgba(6, 182, 212, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: transform 0.1s, opacity 0.2s;
+    }
+
+    .btn-connect:active {
+      transform: scale(0.98);
+      opacity: 0.9;
+    }
+
+    /* Live Status Bar */
+    .status-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--card-border);
+      margin-bottom: 16px;
+      font-size: 13px;
+    }
+
+    .status-banner .room-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      color: var(--primary);
+      background: rgba(6, 182, 212, 0.12);
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+
+    .status-banner .info-text {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-muted);
+    }
+
+    .pulse-ring {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--warning);
+      animation: pulseAnim 1.4s infinite;
+    }
+
+    .pulse-ring.online {
+      background: var(--success);
+      box-shadow: 0 0 10px var(--success);
+    }
+
+    @keyframes pulseAnim {
+      0% { transform: scale(0.9); opacity: 1; }
+      50% { transform: scale(1.4); opacity: 0.4; }
+      100% { transform: scale(0.9); opacity: 1; }
+    }
+
+    /* BIG TAP-TAP CONTINUOUS TOUCHPAD */
+    .tap-pad-wrapper {
+      position: relative;
+      margin-bottom: 20px;
+    }
+
+    .tap-pad {
+      position: relative;
+      height: 200px;
+      border-radius: 24px;
+      background: radial-gradient(circle at center, rgba(244, 63, 94, 0.2) 0%, rgba(15, 23, 42, 0.9) 80%);
+      border: 2px dashed rgba(244, 63, 94, 0.4);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      overflow: hidden;
+      box-shadow: 0 15px 35px rgba(244, 63, 94, 0.15), inset 0 0 30px rgba(244, 63, 94, 0.08);
+      transition: all 0.15s ease;
+    }
+
+    .tap-pad:active, .tap-pad.active-touch {
+      transform: scale(0.98);
+      border-color: var(--accent);
+      background: radial-gradient(circle at center, rgba(244, 63, 94, 0.4) 0%, rgba(20, 20, 45, 0.95) 80%);
+      box-shadow: 0 0 40px var(--accent-glow), inset 0 0 50px rgba(244, 63, 94, 0.25);
+    }
+
+    .tap-pad-icon {
+      font-size: 42px;
+      margin-bottom: 8px;
+      filter: drop-shadow(0 0 12px var(--accent-glow));
+      pointer-events: none;
+    }
+
+    .tap-pad-title {
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      color: #fff;
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+
+    .tap-pad-desc {
+      font-size: 12px;
+      color: #fda4af;
+      margin-top: 4px;
+      font-weight: 600;
+      pointer-events: none;
+    }
+
+    .tap-pad-counter {
+      margin-top: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      pointer-events: none;
+    }
+
+    /* Tap Ripple Effect */
+    .ripple {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(244, 63, 94, 0.45);
+      border: 2px solid rgba(255, 255, 255, 0.6);
+      transform: scale(0);
+      animation: rippleAnim 0.45s ease-out forwards;
+      pointer-events: none;
+    }
+
+    @keyframes rippleAnim {
+      to {
+        transform: scale(4);
+        opacity: 0;
+      }
+    }
+
+    /* Vibration Styles Grid */
+    .styles-header {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .styles-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .vibe-btn {
+      position: relative;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 16px 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      overflow: hidden;
+    }
+
+    .vibe-btn:active {
+      transform: scale(0.96);
+      border-color: var(--primary);
+      background: rgba(6, 182, 212, 0.15);
+      box-shadow: 0 0 20px var(--primary-glow);
+    }
+
+    .vibe-btn.special-hold {
+      grid-column: span 2;
+      background: linear-gradient(135deg, rgba(244, 63, 94, 0.15), rgba(168, 85, 247, 0.15));
+      border-color: rgba(244, 63, 94, 0.3);
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 18px;
+    }
+
+    .vibe-btn.special-hold:active, .vibe-btn.special-hold.holding {
+      background: linear-gradient(135deg, rgba(244, 63, 94, 0.35), rgba(168, 85, 247, 0.35));
+      border-color: var(--accent);
+      box-shadow: 0 0 30px var(--accent-glow);
+      transform: scale(0.98);
+    }
+
+    .vibe-btn .icon {
+      font-size: 26px;
+    }
+
+    .vibe-btn .name {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .vibe-btn .desc {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .vibe-btn .meter {
+      height: 4px;
+      width: 100%;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.08);
+      margin-top: 4px;
+      overflow: hidden;
+    }
+
+    .vibe-btn .meter-fill {
+      height: 100%;
+      background: var(--primary);
+      width: 40%;
+      border-radius: 2px;
+    }
+
+    /* Receiver Flash Indicator */
+    .receiver-box {
+      border-radius: 16px;
+      padding: 14px 16px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      margin-top: auto;
+    }
+
+    .receiver-status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .vibe-wave-anim {
+      display: flex;
+      gap: 3px;
+      align-items: center;
+      height: 16px;
+    }
+
+    .vibe-bar {
+      width: 3px;
+      height: 8px;
+      background: var(--primary);
+      border-radius: 3px;
+    }
+
+    .vibe-wave-anim.active .vibe-bar {
+      background: var(--accent);
+      animation: waveBar 0.4s ease-in-out infinite alternate;
+    }
+    .vibe-wave-anim.active .vibe-bar:nth-child(2) { animation-delay: 0.1s; }
+    .vibe-wave-anim.active .vibe-bar:nth-child(3) { animation-delay: 0.2s; }
+    .vibe-wave-anim.active .vibe-bar:nth-child(4) { animation-delay: 0.3s; }
+
+    @keyframes waveBar {
+      0% { height: 4px; }
+      100% { height: 16px; }
+    }
+
+    /* Settings & Options */
+    .opt-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid var(--card-border);
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* iOS Native Switch Transparent Overlay Trick Layer */
+    /* Hidden native switches for iOS Safari 17.4+ Taptic Engine */
+    .ios-switch-holder {
+      position: fixed;
+      top: -9999px;
+      left: -9999px;
+      opacity: 0.001;
+      pointer-events: none;
+      z-index: -100;
+    }
+
+    .haptic-overlay-label {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+      z-index: 5;
+    }
+
+    /* Fullscreen Flash when receiving vibe */
+    #vibeFlashOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      pointer-events: none;
+      background: radial-gradient(circle, rgba(244, 63, 94, 0.4) 0%, transparent 70%);
+      opacity: 0;
+      transition: opacity 0.08s ease;
+      z-index: 9999;
+    }
+
+    #vibeFlashOverlay.flash {
+      opacity: 1;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Fullscreen vibration flash effect -->
+  <div id="vibeFlashOverlay"></div>
+
+  <!-- iOS Safari 17.4+ Native Switches for Taptic Engine triggers -->
+  <div class="ios-switch-holder">
+    <input type="checkbox" switch id="ios-switch-0">
+    <input type="checkbox" switch id="ios-switch-1">
+    <input type="checkbox" switch id="ios-switch-2">
+    <input type="checkbox" switch id="ios-switch-3">
+    <input type="checkbox" switch id="ios-switch-4">
+    <input type="checkbox" switch id="ios-switch-5">
+  </div>
+
+  <div class="container">
+    <!-- Top Header -->
+    <header>
+      <div class="brand">
+        <div class="brand-icon">⚡</div>
+        <div>
+          <h1 class="brand-title">AhmedTest</h1>
+        </div>
+      </div>
+      <div class="device-pill" id="devicePill">
+        <span class="dot"></span>
+        <span id="devicePillText">Offline</span>
+      </div>
+    </header>
+
+    <!-- SECTION 1: PAIRING VIEW -->
+    <div id="pairingView" class="card">
+      <div class="card-title">
+        <span>🔗</span> Device Pairing
+      </div>
+      <p class="card-sub">
+        Enter the same pairing code on both devices (e.g., iPhone & Android) to link them instantly.
+      </p>
+
+      <div class="pin-group">
+        <div class="pin-input-wrap">
+          <input type="text" id="roomCodeInput" class="pin-input" placeholder="123" maxlength="8" value="123" autocomplete="off" autocorrect="off" autocapitalize="characters">
+        </div>
+        <div class="quick-codes">
+          <button type="button" class="quick-code-btn" onclick="setQuickCode('123')">123</button>
+          <button type="button" class="quick-code-btn" onclick="setQuickCode('777')">777</button>
+          <button type="button" class="quick-code-btn" onclick="setQuickCode('999')">999</button>
+          <button type="button" class="quick-code-btn" onclick="generateRandomCode()">🎲 Random</button>
+        </div>
+      </div>
+
+      <button type="button" id="btnConnect" class="btn-connect" onclick="joinRoom()">
+        <span>Connect & Unlock Haptics</span>
+        <span>→</span>
+      </button>
+
+      <div class="opt-row">
+        <span>Detected Platform:</span>
+        <strong id="platformLabel" style="color:#fff;">Detecting...</strong>
+      </div>
+    </div>
+
+    <!-- SECTION 2: CONNECTED VIBRATION DASHBOARD -->
+    <div id="dashboardView" class="hidden">
+      <!-- Live Status Bar -->
+      <div class="status-banner">
+        <div class="info-text">
+          <div class="pulse-ring" id="statusPulse"></div>
+          <span id="partnerStatusText">Waiting for partner...</span>
+        </div>
+        <div class="room-badge" id="activeRoomBadge">#123</div>
+      </div>
+
+      <!-- BIG TAP-TAP CONTINUOUS TOUCHPAD -->
+      <div class="tap-pad-wrapper">
+        <div id="tapPad" class="tap-pad">
+          <label class="haptic-overlay-label" id="padHapticLabel" for="ios-switch-0"></label>
+          <div class="tap-pad-icon">⚡</div>
+          <div class="tap-pad-title">Tap-Tap Vibration Pad</div>
+          <div class="tap-pad-desc">Tap rapidly to send continuous vibration</div>
+          <div class="tap-pad-counter" id="tapCounter">0 TAPS SENT</div>
+        </div>
+      </div>
+
+      <!-- Vibration Styles Grid -->
+      <div class="styles-header">
+        <span>Vibration Styles</span>
+        <span style="font-size:11px; color:var(--primary);">Tap to Send</span>
+      </div>
+
+      <div class="styles-grid">
+        <!-- Heartbeat -->
+        <div class="vibe-btn" onclick="sendVibeStyle('heartbeat', [120, 160, 120, 600, 120, 160, 120])">
+          <label class="haptic-overlay-label" for="ios-switch-1"></label>
+          <span class="icon">💓</span>
+          <span class="name">Heartbeat</span>
+          <span class="desc">Rhythmic double thump</span>
+          <div class="meter"><div class="meter-fill" style="width: 50%;"></div></div>
+        </div>
+
+        <!-- Rapid Staccato -->
+        <div class="vibe-btn" onclick="sendVibeStyle('rapid', [50, 40, 50, 40, 50, 40, 50, 40, 50])">
+          <label class="haptic-overlay-label" for="ios-switch-2"></label>
+          <span class="icon">⚡</span>
+          <span class="name">Rapid Burst</span>
+          <span class="desc">Fast machine-gun pulses</span>
+          <div class="meter"><div class="meter-fill" style="width: 80%; background:#f59e0b;"></div></div>
+        </div>
+
+        <!-- Heavy Buzz -->
+        <div class="vibe-btn" onclick="sendVibeStyle('heavy', [650, 150, 650])">
+          <label class="haptic-overlay-label" for="ios-switch-3"></label>
+          <span class="icon">🐝</span>
+          <span class="name">Heavy Buzz</span>
+          <span class="desc">Solid deep motor buzz</span>
+          <div class="meter"><div class="meter-fill" style="width: 100%; background:var(--accent);"></div></div>
+        </div>
+
+        <!-- SOS Alert -->
+        <div class="vibe-btn" onclick="sendVibeStyle('sos', [100, 100, 100, 100, 100, 200, 300, 100, 300, 100, 300, 200, 100, 100, 100])">
+          <label class="haptic-overlay-label" for="ios-switch-4"></label>
+          <span class="icon">🚨</span>
+          <span class="name">SOS Pattern</span>
+          <span class="desc">... --- ... Emergency alert</span>
+          <div class="meter"><div class="meter-fill" style="width: 70%; background:#ec4899;"></div></div>
+        </div>
+
+        <!-- Special Hold for Continuous Vibration -->
+        <div class="vibe-btn special-hold" id="continuousHoldBtn">
+          <label class="haptic-overlay-label" id="holdHapticLabel" for="ios-switch-5"></label>
+          <div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span class="icon">🔥</span>
+              <span class="name">Hold Continuous Vibe</span>
+            </div>
+            <div class="desc" style="color:#fda4af; margin-top:2px;">Keep pressed for endless continuous vibration</div>
+          </div>
+          <span style="font-size:20px; font-weight:800; color:#fff;">PRESS</span>
+        </div>
+      </div>
+
+      <!-- Receiver Feedback Bar -->
+      <div class="receiver-box">
+        <div class="receiver-status">
+          <div class="vibe-wave-anim" id="receiverWave">
+            <div class="vibe-bar"></div>
+            <div class="vibe-bar"></div>
+            <div class="vibe-bar"></div>
+            <div class="vibe-bar"></div>
+          </div>
+          <div>
+            <div style="font-weight:700;" id="lastEventLabel">Ready for incoming vibrations</div>
+            <div style="font-size:11px; color:var(--text-muted);" id="lastEventSub">Signals will vibrate this device</div>
+          </div>
+        </div>
+        <button type="button" class="quick-code-btn" style="padding:6px 10px; font-size:11px;" onclick="testLocalHaptics()">
+          🧪 Test Haptic
+        </button>
+      </div>
+
+      <!-- Bottom controls -->
+      <div class="opt-row" style="margin-top:16px;">
+        <span id="roleLabel">Role: Device 1</span>
+        <button type="button" class="quick-code-btn" style="color:#f43f5e;" onclick="disconnectRoom()">
+          Disconnect
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* =====================================================================
+       1. GLOBAL STATE & DEVICE IDENTIFICATION
+       ===================================================================== */
+    let deviceId = localStorage.getItem('ahmedtest_device_id');
+    if (!deviceId) {
+      deviceId = 'dev_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+      localStorage.setItem('ahmedtest_device_id', deviceId);
+    }
+
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isAndroid = /Android/.test(navigator.userAgent);
+    const hasVibrator = 'vibrate' in navigator;
+
+    document.getElementById('platformLabel').textContent = isIOS ? 'Apple iPhone / iOS' : (isAndroid ? 'Android Device' : 'Desktop / Browser');
+
+    let currentRoomCode = '';
+    let myRole = 'Device 1';
+    let isConnected = false;
+    let syncInterval = null;
+    let lastSeq = 0;
+    let tapCount = 0;
+    let switchCounter = 0;
+    const TOTAL_SWITCHES = 6;
+
+    /* =====================================================================
+       2. TAPTIC ENGINE & SUB-BASS AUDIO HAPTIC ENGINE (FOR IPHONE & ANDROID)
+       ===================================================================== */
+    let audioCtx = null;
+
+    function initAudioContext() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) {
+          audioCtx = new AudioContextClass();
+        }
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    // Cycles the <label for="..."> to cycle across native switches for rapid tap haptics
+    function cycleIOSSwitch() {
+      switchCounter = (switchCounter + 1) % TOTAL_SWITCHES;
+      const targetId = `ios-switch-${switchCounter}`;
+      
+      const padLabel = document.getElementById('padHapticLabel');
+      if (padLabel) padLabel.htmlFor = targetId;
+      
+      const holdLabel = document.getElementById('holdHapticLabel');
+      if (holdLabel) holdLabel.htmlFor = targetId;
+
+      // Also programmatically toggle the switch checked state
+      const sw = document.getElementById(targetId);
+      if (sw) {
+        sw.checked = !sw.checked;
+      }
+    }
+
+    // Plays low-frequency Sub-Bass impulse (55Hz) that causes iPhone chassis & speakers to rumble
+    function playSubBassHaptic(durationMs = 120, freq = 58) {
+      try {
+        initAudioContext();
+        if (!audioCtx) return;
+
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        // 55-60Hz sine/square gives maximum mechanical speaker diaphragm excursion (buzz feeling)
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+        // Lowpass filter to muffle audio pitch and enhance physical rumble feeling
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(95, audioCtx.currentTime);
+
+        const now = audioCtx.currentTime;
+        const durSec = durationMs / 1000;
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.exponentialRampToValueAtTime(0.95, now + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + durSec);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start(now);
+        osc.stop(now + durSec + 0.05);
+      } catch (err) {
+        console.warn('Audio haptic error:', err);
+      }
+    }
+
+    // Master function that physically vibrates or triggers haptics on THIS device
+    function triggerDeviceHaptic(pattern = [100], styleName = 'pulse') {
+      cycleIOSSwitch();
+
+      // 1. Android physical vibration
+      if (hasVibrator) {
+        try {
+          navigator.vibrate(pattern);
+        } catch (e) {}
+      }
+
+      // 2. iPhone / Web Audio Sub-Bass physical pulse
+      if (Array.isArray(pattern)) {
+        let delay = 0;
+        pattern.forEach((val, idx) => {
+          if (idx % 2 === 0) {
+            // Vibrate phase
+            setTimeout(() => {
+              playSubBassHaptic(val, 55);
+              cycleIOSSwitch();
+            }, delay);
+          }
+          delay += val;
+        });
+      } else {
+        playSubBassHaptic(pattern, 55);
+      }
+
+      // 3. Screen visual shake & flash
+      flashScreenEffect(styleName);
+    }
+
+    function flashScreenEffect(label = '') {
+      const overlay = document.getElementById('vibeFlashOverlay');
+      const wave = document.getElementById('receiverWave');
+      document.body.classList.add('vibrating');
+      overlay.classList.add('flash');
+      wave.classList.add('active');
+
+      setTimeout(() => {
+        document.body.classList.remove('vibrating');
+        overlay.classList.remove('flash');
+        wave.classList.remove('active');
+      }, 240);
+    }
+
+    function testLocalHaptics() {
+      initAudioContext();
+      triggerDeviceHaptic([100, 80, 100], 'Test Haptic');
+      document.getElementById('lastEventLabel').textContent = '🧪 Tested Local Haptic!';
+      document.getElementById('lastEventSub').textContent = 'Fired switch & sub-bass pulse';
+    }
+
+    /* =====================================================================
+       3. PAIRING & REAL-TIME NETWORKING
+       ===================================================================== */
+    function setQuickCode(code) {
+      document.getElementById('roomCodeInput').value = code;
+    }
+
+    function generateRandomCode() {
+      const rand = Math.floor(100 + Math.random() * 900);
+      document.getElementById('roomCodeInput').value = rand;
+    }
+
+    async function joinRoom() {
+      initAudioContext();
+      const codeInput = document.getElementById('roomCodeInput');
+      const code = (codeInput.value || '').trim();
+
+      if (!code) {
+        alert('Please enter a pairing code (e.g. 123)');
+        return;
+      }
+
+      const btn = document.getElementById('btnConnect');
+      btn.textContent = 'Connecting...';
+      btn.style.opacity = '0.7';
+
+      try {
+        const resp = await fetch('/api/ahmedtest/join/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code: code,
+            device_id: deviceId,
+            device_name: isIOS ? 'iPhone' : (isAndroid ? 'Android' : 'Browser')
+          })
+        });
+
+        const data = await resp.json();
+        if (data.success) {
+          currentRoomCode = data.code;
+          myRole = data.role;
+          lastSeq = data.latest_seq || 0;
+          isConnected = data.connected;
+
+          document.getElementById('pairingView').classList.add('hidden');
+          document.getElementById('dashboardView').classList.remove('hidden');
+          document.getElementById('activeRoomBadge').textContent = '#' + currentRoomCode;
+          document.getElementById('roleLabel').textContent = `Role: ${myRole} (You)`;
+
+          updatePartnerUI(data.connected, data.partner_name);
+          startSyncPolling();
+          triggerDeviceHaptic([60, 40, 60], 'Connected');
+        } else {
+          alert(data.error || 'Could not connect to room');
+          btn.textContent = 'Connect & Unlock Haptics →';
+          btn.style.opacity = '1';
+        }
+      } catch (err) {
+        alert('Connection error: ' + err.message);
+        btn.textContent = 'Connect & Unlock Haptics →';
+        btn.style.opacity = '1';
+      }
+    }
+
+    function updatePartnerUI(connected, partnerName = '') {
+      const pill = document.getElementById('devicePill');
+      const pillText = document.getElementById('devicePillText');
+      const pulse = document.getElementById('statusPulse');
+      const statusText = document.getElementById('partnerStatusText');
+
+      if (connected) {
+        pill.classList.add('connected');
+        pillText.textContent = '🟢 Linked';
+        pulse.classList.add('online');
+        statusText.innerHTML = `<strong style="color:#34d399;">Connected!</strong> Paired with ${partnerName || 'Partner'}`;
+      } else {
+        pill.classList.remove('connected');
+        pillText.textContent = 'Waiting';
+        pulse.classList.remove('online');
+        statusText.innerHTML = `Waiting for partner with code <strong style="color:var(--primary);">#${currentRoomCode}</strong>...`;
+      }
+    }
+
+    function startSyncPolling() {
+      if (syncInterval) clearInterval(syncInterval);
+      // Fast polling (320ms) for snappy real-time responsiveness
+      syncInterval = setInterval(pollSync, 320);
+    }
+
+    async function pollSync() {
+      if (!currentRoomCode) return;
+
+      try {
+        const url = `/api/ahmedtest/sync/?code=${encodeURIComponent(currentRoomCode)}&device_id=${encodeURIComponent(deviceId)}&last_seq=${lastSeq}`;
+        const resp = await fetch(url);
+        if (!resp.ok) return;
+
+        const data = await resp.json();
+        if (data.success) {
+          updatePartnerUI(data.connected, data.partner_name);
+
+          if (data.events && data.events.length > 0) {
+            data.events.forEach(ev => {
+              if (ev.id > lastSeq) {
+                lastSeq = ev.id;
+                // RECEIVE VIBRATION FROM PARTNER!
+                onReceivePartnerVibe(ev);
+              }
+            });
+          }
+          if (data.latest_seq > lastSeq) {
+            lastSeq = data.latest_seq;
+          }
+        }
+      } catch (e) {
+        // network hiccup, ignore silently
+      }
+    }
+
+    function onReceivePartnerVibe(ev) {
+      const styleName = ev.style || 'Tap';
+      const pattern = ev.pattern || [100];
+
+      // Trigger local haptic on THIS device!
+      triggerDeviceHaptic(pattern, styleName);
+
+      document.getElementById('lastEventLabel').innerHTML = `⚡ Received: <span style="color:var(--accent);">${styleName.toUpperCase()}</span>`;
+      document.getElementById('lastEventSub').textContent = `From ${ev.sender_role || 'Partner'} • ${new Date().toLocaleTimeString()}`;
+    }
+
+    async function disconnectRoom() {
+      if (syncInterval) clearInterval(syncInterval);
+      try {
+        await fetch('/api/ahmedtest/leave/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: currentRoomCode, device_id: deviceId })
+        });
+      } catch (e) {}
+
+      currentRoomCode = '';
+      document.getElementById('dashboardView').classList.add('hidden');
+      document.getElementById('pairingView').classList.remove('hidden');
+      document.getElementById('btnConnect').textContent = 'Connect & Unlock Haptics →';
+      document.getElementById('btnConnect').style.opacity = '1';
+      document.getElementById('devicePill').classList.remove('connected');
+      document.getElementById('devicePillText').textContent = 'Offline';
+    }
+
+    /* =====================================================================
+       4. TRANSMITTING VIBRATIONS (TAP-TAP & STYLES)
+       ===================================================================== */
+    async function sendVibeEvent(style, pattern, continuous = false) {
+      if (!currentRoomCode) return;
+
+      // 1. Immediately trigger local haptic feedback for instant tactile response!
+      triggerDeviceHaptic(pattern, style);
+
+      // 2. Transmit to partner device
+      try {
+        await fetch('/api/ahmedtest/send/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code: currentRoomCode,
+            device_id: deviceId,
+            style: style,
+            pattern: pattern,
+            continuous: continuous
+          })
+        });
+      } catch (e) {}
+    }
+
+    function sendVibeStyle(name, pattern) {
+      initAudioContext();
+      sendVibeEvent(name, pattern, false);
+      document.getElementById('lastEventLabel').innerHTML = `📤 Sent: <span style="color:var(--primary);">${name.toUpperCase()}</span>`;
+      document.getElementById('lastEventSub').textContent = `Sent to partner at ${new Date().toLocaleTimeString()}`;
+    }
+
+    /* --- TAP-PAD CONTINUOUS RAPID FIRE --- */
+    const tapPad = document.getElementById('tapPad');
+
+    function handlePadTap(e) {
+      e.preventDefault();
+      initAudioContext();
+      tapCount++;
+      document.getElementById('tapCounter').textContent = `${tapCount} TAPS SENT`;
+
+      // Visual ripple
+      const rect = tapPad.getBoundingClientRect();
+      const x = (e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : rect.left + rect.width / 2)) - rect.left;
+      const y = (e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : rect.top + rect.height / 2)) - rect.top;
+
+      const ripple = document.createElement('div');
+      ripple.className = 'ripple';
+      ripple.style.left = `${x}px`;
+      ripple.style.top = `${y}px`;
+      ripple.style.width = '60px';
+      ripple.style.height = '60px';
+      ripple.style.marginLeft = '-30px';
+      ripple.style.marginTop = '-30px';
+      tapPad.appendChild(ripple);
+      setTimeout(() => ripple.remove(), 450);
+
+      // Send instant crisp pulse
+      sendVibeEvent('tap', [70], false);
+    }
+
+    tapPad.addEventListener('pointerdown', handlePadTap);
+
+    /* --- HOLD CONTINUOUS VIBRATION --- */
+    const holdBtn = document.getElementById('continuousHoldBtn');
+    let holdTimer = null;
+
+    function startContinuousHold(e) {
+      e.preventDefault();
+      initAudioContext();
+      holdBtn.classList.add('holding');
+
+      // Send immediately
+      sendVibeEvent('continuous', [140, 30, 140], true);
+
+      // Repeat rapidly every 180ms while pressed
+      holdTimer = setInterval(() => {
+        sendVibeEvent('continuous', [140, 30, 140], true);
+      }, 180);
+    }
+
+    function stopContinuousHold(e) {
+      if (holdTimer) {
+        clearInterval(holdTimer);
+        holdTimer = null;
+      }
+      holdBtn.classList.remove('holding');
+    }
+
+    holdBtn.addEventListener('pointerdown', startContinuousHold);
+    holdBtn.addEventListener('pointerup', stopContinuousHold);
+    holdBtn.addEventListener('pointercancel', stopContinuousHold);
+    holdBtn.addEventListener('mouseleave', stopContinuousHold);
+
+    // Document-level user gesture unlock for audio and haptics
+    window.addEventListener('touchstart', initAudioContext, { passive: true, once: true });
+    window.addEventListener('click', initAudioContext, { passive: true, once: true });
+  </script>
+</body>
+</html>
+

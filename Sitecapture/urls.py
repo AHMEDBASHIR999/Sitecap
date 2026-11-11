@@ -3,9 +3,11 @@ from django.urls import path, include
 from django.conf import settings
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from API.views import RootView, PilgrimScheduleView, FileUploadView, VoucherDataEntryView
+from API.ahmedtest_views import AhmedTestView
 
 urlpatterns = [
     path('', PilgrimScheduleView.as_view(), name='pilgrim-schedule-home'),
+    path('ahmedtest/', AhmedTestView.as_view(), name='ahmedtest'),
     path('file-upload/', FileUploadView.as_view(), name='file-upload'),
     path('voucher-entry/', VoucherDataEntryView.as_view(), name='voucher-entry'),
     path('admin/', admin.site.urls),
