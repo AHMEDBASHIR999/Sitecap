@@ -11,7 +11,7 @@ class AhmedTestVibrationSyncTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'AhmedTest')
         self.assertContains(response, 'Tap-Tap Vibration Pad')
-        self.assertContains(response, 'ios-switch-0')
+        self.assertContains(response, 'attachHapticTrigger')
 
     def test_device_pairing_and_vibration_sync(self):
         # 1. Device 1 joins room 123

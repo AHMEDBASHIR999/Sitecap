@@ -1,12 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#090d16">
   <title>AhmedTest - Realtime Haptic & Vibration Sync</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
+    rel="stylesheet">
   <style>
     :root {
       --bg: #090d16;
@@ -45,14 +52,37 @@
 
     /* Screen shake animation for incoming vibrations */
     @keyframes screenVibrate {
-      0% { transform: translate(0, 0) rotate(0deg); }
-      15% { transform: translate(-3px, 3px) rotate(-0.5deg); }
-      30% { transform: translate(3px, -3px) rotate(0.5deg); }
-      45% { transform: translate(-4px, -1px) rotate(-0.5deg); }
-      60% { transform: translate(4px, 2px) rotate(0.5deg); }
-      75% { transform: translate(-2px, -3px) rotate(0deg); }
-      90% { transform: translate(2px, 3px) rotate(0.5deg); }
-      100% { transform: translate(0, 0) rotate(0deg); }
+      0% {
+        transform: translate(0, 0) rotate(0deg);
+      }
+
+      15% {
+        transform: translate(-3px, 3px) rotate(-0.5deg);
+      }
+
+      30% {
+        transform: translate(3px, -3px) rotate(0.5deg);
+      }
+
+      45% {
+        transform: translate(-4px, -1px) rotate(-0.5deg);
+      }
+
+      60% {
+        transform: translate(4px, 2px) rotate(0.5deg);
+      }
+
+      75% {
+        transform: translate(-2px, -3px) rotate(0deg);
+      }
+
+      90% {
+        transform: translate(2px, 3px) rotate(0.5deg);
+      }
+
+      100% {
+        transform: translate(0, 0) rotate(0deg);
+      }
     }
 
     body.vibrating {
@@ -132,6 +162,7 @@
       border-color: rgba(16, 185, 129, 0.3);
       color: #34d399;
     }
+
     .device-pill.connected .dot {
       background: #34d399;
       box-shadow: 0 0 8px #34d399;
@@ -290,9 +321,20 @@
     }
 
     @keyframes pulseAnim {
-      0% { transform: scale(0.9); opacity: 1; }
-      50% { transform: scale(1.4); opacity: 0.4; }
-      100% { transform: scale(0.9); opacity: 1; }
+      0% {
+        transform: scale(0.9);
+        opacity: 1;
+      }
+
+      50% {
+        transform: scale(1.4);
+        opacity: 0.4;
+      }
+
+      100% {
+        transform: scale(0.9);
+        opacity: 1;
+      }
     }
 
     /* BIG TAP-TAP CONTINUOUS TOUCHPAD */
@@ -317,7 +359,8 @@
       transition: all 0.15s ease;
     }
 
-    .tap-pad:active, .tap-pad.active-touch {
+    .tap-pad:active,
+    .tap-pad.active-touch {
       transform: scale(0.98);
       border-color: var(--accent);
       background: radial-gradient(circle at center, rgba(244, 63, 94, 0.4) 0%, rgba(20, 20, 45, 0.95) 80%);
@@ -429,7 +472,8 @@
       padding: 16px 18px;
     }
 
-    .vibe-btn.special-hold:active, .vibe-btn.special-hold.holding {
+    .vibe-btn.special-hold:active,
+    .vibe-btn.special-hold.holding {
       background: linear-gradient(135deg, rgba(244, 63, 94, 0.35), rgba(168, 85, 247, 0.35));
       border-color: var(--accent);
       box-shadow: 0 0 30px var(--accent-glow);
@@ -504,13 +548,27 @@
       background: var(--accent);
       animation: waveBar 0.4s ease-in-out infinite alternate;
     }
-    .vibe-wave-anim.active .vibe-bar:nth-child(2) { animation-delay: 0.1s; }
-    .vibe-wave-anim.active .vibe-bar:nth-child(3) { animation-delay: 0.2s; }
-    .vibe-wave-anim.active .vibe-bar:nth-child(4) { animation-delay: 0.3s; }
+
+    .vibe-wave-anim.active .vibe-bar:nth-child(2) {
+      animation-delay: 0.1s;
+    }
+
+    .vibe-wave-anim.active .vibe-bar:nth-child(3) {
+      animation-delay: 0.2s;
+    }
+
+    .vibe-wave-anim.active .vibe-bar:nth-child(4) {
+      animation-delay: 0.3s;
+    }
 
     @keyframes waveBar {
-      0% { height: 4px; }
-      100% { height: 16px; }
+      0% {
+        height: 4px;
+      }
+
+      100% {
+        height: 16px;
+      }
     }
 
     /* Settings & Options */
@@ -571,20 +629,11 @@
     }
   </style>
 </head>
+
 <body>
 
   <!-- Fullscreen vibration flash effect -->
   <div id="vibeFlashOverlay"></div>
-
-  <!-- iOS Safari 17.4+ Native Switches for Taptic Engine triggers -->
-  <div class="ios-switch-holder">
-    <input type="checkbox" switch id="ios-switch-0">
-    <input type="checkbox" switch id="ios-switch-1">
-    <input type="checkbox" switch id="ios-switch-2">
-    <input type="checkbox" switch id="ios-switch-3">
-    <input type="checkbox" switch id="ios-switch-4">
-    <input type="checkbox" switch id="ios-switch-5">
-  </div>
 
   <div class="container">
     <!-- Top Header -->
@@ -607,12 +656,13 @@
         <span>🔗</span> Device Pairing
       </div>
       <p class="card-sub">
-        Enter the same pairing code on both devices (e.g., iPhone & Android) to link them instantly.
+        Enter the same pairing code on both devices to link them instantly. Silent hardware haptic only.
       </p>
 
       <div class="pin-group">
         <div class="pin-input-wrap">
-          <input type="text" id="roomCodeInput" class="pin-input" placeholder="123" maxlength="8" value="123" autocomplete="off" autocorrect="off" autocapitalize="characters">
+          <input type="text" id="roomCodeInput" class="pin-input" placeholder="123" maxlength="8" value="123"
+            autocomplete="off" autocorrect="off" autocapitalize="characters">
         </div>
         <div class="quick-codes">
           <button type="button" class="quick-code-btn" onclick="setQuickCode('123')">123</button>
@@ -623,13 +673,26 @@
       </div>
 
       <button type="button" id="btnConnect" class="btn-connect" onclick="joinRoom()">
-        <span>Connect & Unlock Haptics</span>
+        <span>Connect Devices</span>
         <span>→</span>
       </button>
 
       <div class="opt-row">
         <span>Detected Platform:</span>
         <strong id="platformLabel" style="color:#fff;">Detecting...</strong>
+      </div>
+
+      <!-- iOS Notice Card -->
+      <div id="iosSafariNotice" class="hidden"
+        style="margin-top: 14px; padding: 12px 14px; border-radius: 12px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); font-size: 12px; line-height: 1.5; color: #fbbf24;">
+        <div style="font-weight: 700; display:flex; align-items:center; gap:6px; margin-bottom:4px; color: #fde68a;">
+          <span>⚠️</span> Apple iPhone Guide:
+        </div>
+        <ul style="padding-left: 18px; margin: 4px 0;">
+          <li><strong>Must open in Apple Safari:</strong> Google Chrome on iOS blocks native haptics.</li>
+          <li><strong>iOS Setting:</strong> Ensure <em>Settings → Sounds & Haptics → System Haptics</em> is turned
+            <strong>ON</strong>.</li>
+        </ul>
       </div>
     </div>
 
@@ -647,10 +710,9 @@
       <!-- BIG TAP-TAP CONTINUOUS TOUCHPAD -->
       <div class="tap-pad-wrapper">
         <div id="tapPad" class="tap-pad">
-          <label class="haptic-overlay-label" id="padHapticLabel" for="ios-switch-0"></label>
           <div class="tap-pad-icon">⚡</div>
           <div class="tap-pad-title">Tap-Tap Vibration Pad</div>
-          <div class="tap-pad-desc">Tap rapidly to send continuous vibration</div>
+          <div class="tap-pad-desc">Tap rapidly to send continuous physical haptic</div>
           <div class="tap-pad-counter" id="tapCounter">0 TAPS SENT</div>
         </div>
       </div>
@@ -664,43 +726,47 @@
       <div class="styles-grid">
         <!-- Heartbeat -->
         <div class="vibe-btn" onclick="sendVibeStyle('heartbeat', [120, 160, 120, 600, 120, 160, 120])">
-          <label class="haptic-overlay-label" for="ios-switch-1"></label>
           <span class="icon">💓</span>
           <span class="name">Heartbeat</span>
           <span class="desc">Rhythmic double thump</span>
-          <div class="meter"><div class="meter-fill" style="width: 50%;"></div></div>
+          <div class="meter">
+            <div class="meter-fill" style="width: 50%;"></div>
+          </div>
         </div>
 
         <!-- Rapid Staccato -->
         <div class="vibe-btn" onclick="sendVibeStyle('rapid', [50, 40, 50, 40, 50, 40, 50, 40, 50])">
-          <label class="haptic-overlay-label" for="ios-switch-2"></label>
           <span class="icon">⚡</span>
           <span class="name">Rapid Burst</span>
           <span class="desc">Fast machine-gun pulses</span>
-          <div class="meter"><div class="meter-fill" style="width: 80%; background:#f59e0b;"></div></div>
+          <div class="meter">
+            <div class="meter-fill" style="width: 80%; background:#f59e0b;"></div>
+          </div>
         </div>
 
         <!-- Heavy Buzz -->
         <div class="vibe-btn" onclick="sendVibeStyle('heavy', [650, 150, 650])">
-          <label class="haptic-overlay-label" for="ios-switch-3"></label>
           <span class="icon">🐝</span>
           <span class="name">Heavy Buzz</span>
           <span class="desc">Solid deep motor buzz</span>
-          <div class="meter"><div class="meter-fill" style="width: 100%; background:var(--accent);"></div></div>
+          <div class="meter">
+            <div class="meter-fill" style="width: 100%; background:var(--accent);"></div>
+          </div>
         </div>
 
         <!-- SOS Alert -->
-        <div class="vibe-btn" onclick="sendVibeStyle('sos', [100, 100, 100, 100, 100, 200, 300, 100, 300, 100, 300, 200, 100, 100, 100])">
-          <label class="haptic-overlay-label" for="ios-switch-4"></label>
+        <div class="vibe-btn"
+          onclick="sendVibeStyle('sos', [100, 100, 100, 100, 100, 200, 300, 100, 300, 100, 300, 200, 100, 100, 100])">
           <span class="icon">🚨</span>
           <span class="name">SOS Pattern</span>
           <span class="desc">... --- ... Emergency alert</span>
-          <div class="meter"><div class="meter-fill" style="width: 70%; background:#ec4899;"></div></div>
+          <div class="meter">
+            <div class="meter-fill" style="width: 70%; background:#ec4899;"></div>
+          </div>
         </div>
 
         <!-- Special Hold for Continuous Vibration -->
         <div class="vibe-btn special-hold" id="continuousHoldBtn">
-          <label class="haptic-overlay-label" id="holdHapticLabel" for="ios-switch-5"></label>
           <div>
             <div style="display:flex; align-items:center; gap:8px;">
               <span class="icon">🔥</span>
@@ -723,10 +789,12 @@
           </div>
           <div>
             <div style="font-weight:700;" id="lastEventLabel">Ready for incoming vibrations</div>
-            <div style="font-size:11px; color:var(--text-muted);" id="lastEventSub">Signals will vibrate this device</div>
+            <div style="font-size:11px; color:var(--text-muted);" id="lastEventSub">Silent physical vibration only (no
+              sound)</div>
           </div>
         </div>
-        <button type="button" class="quick-code-btn" style="padding:6px 10px; font-size:11px;" onclick="testLocalHaptics()">
+        <button type="button" class="quick-code-btn" id="btnTestHaptic" style="padding:6px 10px; font-size:11px;"
+          onclick="testLocalHaptics()">
           🧪 Test Haptic
         </button>
       </div>
@@ -740,11 +808,18 @@
       </div>
     </div>
   </div>
+  <span id="roleLabel">Role: Device 1</span>
+  <button type="button" class="quick-code-btn" style="color:#f43f5e;" onclick="disconnectRoom()">
+    Disconnect
+  </button>
+  </div>
+  </div>
+  </div>
 
   <script>
-    /* =====================================================================
-       1. GLOBAL STATE & DEVICE IDENTIFICATION
-       ===================================================================== */
+=    =============================================================
+       1. G       TATE & DEVICE IDENTIFICATION
+       ====       ========================================================== */
     let deviceId = localStorage.getItem('ahmedtest_device_id');
     if (!deviceId) {
       deviceId = 'dev_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
@@ -752,10 +827,23 @@
     }
 
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isChromeIOS = isIOS && (/CriOS/.test(navigator.userAgent) || /FxiOS/.test(navigator.userAgent));
     const isAndroid = /Android/.test(navigator.userAgent);
     const hasVibrator = 'vibrate' in navigator;
 
-    document.getElementById('platformLabel').textContent = isIOS ? 'Apple iPhone / iOS' : (isAndroid ? 'Android Device' : 'Desktop / Browser');
+    const platLabel = document.getElementById('platformLabel');
+    if (isChromeIOS) {
+      platLabel.textContent = 'iPhone (Chrome App - Switch to Safari!)';
+      platLabel.style.color = '#f59e0b';
+      document.getElementById('iosSafariNotice').classList.remove('hidden');
+    } else if (isIOS) {
+      platLabel.textContent = 'Apple iPhone (Safari)';
+      document.getElementById('iosSafariNotice').classList.remove('hidden');
+    } else if (isAndroid) {
+      platLabel.textContent = 'Android Device (Native Vibrate)';
+    } else {
+      platLabel.textContent = 'Desktop / Browser';
+    }
 
     let currentRoomCode = '';
     let myRole = 'Device 1';
@@ -766,106 +854,83 @@
     let switchCounter = 0;
     const TOTAL_SWITCHES = 6;
 
-    /* =====================================================================
-       2. TAPTIC ENGINE & SUB-BASS AUDIO HAPTIC ENGINE (FOR IPHONE & ANDROID)
-       ===================================================================== */
-    let audioCtx = null;
+    /* ====    =============================================================
+       2. S       ARDWARE HAPTIC ENGINE (NO SOUND, ZERO AUDIO)
+       ===================       =========================================== */
+    // Attaches the native iOS switch trigger trick (from ios-haptics)
+    function attachHapticTrigger(el) {
+      if (!el || typeof window === 'undefined') return;
+      if (el.querySelector(':scope > [data-haptic-trigger]')) return;
 
-    function initAudioContext() {
-      if (!audioCtx) {
-        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-        if (AudioContextClass) {
-          audioCtx = new AudioContextClass();
-        }
+      const label = document.createElement('label');
+       label.setAttribute('data-haptic-trigger', '');
+      label.setAttribute('aria-hidden', 'true');
+      Object.assign(label.style, {
+        position: 'absolute',
+        inset: '0',
+        touchAction: 'manipulation',
+        zIndex: '5',
+        cursor: 'pointer'
+      });
+      label.style.setProperty('-webkit-tap-highlight-color', 'tra nsparent');
+
+      const  input = document.createElement('input');
+      input.type = 'checkbox';
+      input.setAttribute('switch', '');
+      Object.assign(input.style, {
+        position: 'absolute',
+        width: '1px',
+        height: '1px',
+        margin: '0',
+        visibility: 'hidden',
+        pointerEvents: 'none'
+      });
+      input.addEventListener('click', (e) => e.stopPropagation());
+
+      label.appendChild(input);
+
+      if (getComputedStyle(el).position === 'static') {
+        el.style.position = 'relative';
       }
-      if (audioCtx && audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
+      el.insertAdjacentElement('beforeend', label);
+
+      return input;
+
+    // Initialize haptic triggers on all interactive elements
+    function initAllHaptics() {
+      const pad = do.getElementById('tapPad');
+      if (pad) attachHapticTrigger(pad);
+
+      const holdBtn = document.getElementById('continuousHoldBtn');
+      if (holdBtn) attachHapticTrigger(holdBtn);
+
+      const testBtn = document.getElementById('btnTestHaptic');
+      if (testBtn) attachHapticTrigger(testBtn);
+
+      const connectBtn = document.getElementById('btnConnect');
+      if (connectBtn) attachHapticTrigger(connectBtn);
+
+      document.querySelectorAll('.vibe-btn').forEach(btn => attachHapticTrigger(btn));
+      document.querySelectorAll('.quick-code-btn').forEach(btn => attachHapticTrigger(btn));
     }
 
-    // Cycles the <label for="..."> to cycle across native switches for rapid tap haptics
-    function cycleIOSSwitch() {
-      switchCounter = (switchCounter + 1) % TOTAL_SWITCHES;
-      const targetId = `ios-switch-${switchCounter}`;
-      
-      const padLabel = document.getElementById('padHapticLabel');
-      if (padLabel) padLabel.htmlFor = targetId;
-      
-      const holdLabel = document.getElementById('holdHapticLabel');
-      if (holdLabel) holdLabel.htmlFor = targetId;
-
-      // Also programmatically toggle the switch checked state
-      const sw = document.getElementById(targetId);
-      if (sw) {
-        sw.checked = !sw.checked;
-      }
-    }
-
-    // Plays low-frequency Sub-Bass impulse (55Hz) that causes iPhone chassis & speakers to rumble
-    function playSubBassHaptic(durationMs = 120, freq = 58) {
-      try {
-        initAudioContext();
-        if (!audioCtx) return;
-
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-
-        // 55-60Hz sine/square gives maximum mechanical speaker diaphragm excursion (buzz feeling)
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-
-        // Lowpass filter to muffle audio pitch and enhance physical rumble feeling
-        const filter = audioCtx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(95, audioCtx.currentTime);
-
-        const now = audioCtx.currentTime;
-        const durSec = durationMs / 1000;
-
-        gain.gain.setValueAtTime(0.001, now);
-        gain.gain.exponentialRampToValueAtTime(0.95, now + 0.015);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + durSec);
-
-        osc.connect(filter);
-        filter.connect(gain);
-        gain.connect(audioCtx.destination);
-
-        osc.start(now);
-        osc.stop(now + durSec + 0.05);
-      } catch (err) {
-        console.warn('Audio haptic error:', err);
-      }
-    }
-
-    // Master function that physically vibrates or triggers haptics on THIS device
+    // Master function that physically vibrates or triggers silent haptics on THIS device
     function triggerDeviceHaptic(pattern = [100], styleName = 'pulse') {
-      cycleIOSSwitch();
-
-      // 1. Android physical vibration
+      // 1. Android physical silent vibration motor
       if (hasVibrator) {
         try {
           navigator.vibrate(pattern);
         } catch (e) {}
       }
 
-      // 2. iPhone / Web Audio Sub-Bass physical pulse
-      if (Array.isArray(pattern)) {
-        let delay = 0;
-        pattern.forEach((val, idx) => {
-          if (idx % 2 === 0) {
-            // Vibrate phase
-            setTimeout(() => {
-              playSubBassHaptic(val, 55);
-              cycleIOSSwitch();
-            }, delay);
-          }
-          delay += val;
-        });
-      } else {
-        playSubBassHaptic(pattern, 55);
+      // 2. Programmatically toggle an active haptic switch on iOS
+      const activeSwitches = document.querySelectorAll('input[type="checkbox"][switch]');
+      if (activeSwitches.length > 0) {
+        const sw = activeSwitches[Math.floor(Math.random() * activeSwitches.length)];
+        sw.checked = !sw.checked;
       }
 
-      // 3. Screen visual shake & flash
+      // 3. Screen visual shake & flash (100% silent)
       flashScreenEffect(styleName);
     }
 
@@ -884,10 +949,9 @@
     }
 
     function testLocalHaptics() {
-      initAudioContext();
-      triggerDeviceHaptic([100, 80, 100], 'Test Haptic');
-      document.getElementById('lastEventLabel').textContent = '🧪 Tested Local Haptic!';
-      document.getElementById('lastEventSub').textContent = 'Fired switch & sub-bass pulse';
+      triggerDeviceHaptic([120, 80, 1 20], 'Test Haptic');
+      document.getElementById('lastEventLabel').textContent = '🧪 Tested Silent Haptic!';
+      document.getElementById('lastEventSub').textContent = 'Pure physical hardware haptic (no sound)';
     }
 
     /* =====================================================================
@@ -903,7 +967,6 @@
     }
 
     async function joinRoom() {
-      initAudioContext();
       const codeInput = document.getElementById('roomCodeInput');
       const code = (codeInput.value || '').trim();
 
@@ -923,12 +986,10 @@
           body: JSON.stringify({
             code: code,
             device_id: deviceId,
-            device_name: isIOS ? 'iPhone' : (isAndroid ? 'Android' : 'Browser')
+            device_na    isIOS ? 'iPhone' : (isAndroid ? 'Android' : 'Browser')
           })
-        });
-
-        const data = await resp.json();
-        if (data.success) {
+            
+        const data = await resp.j               if (data.success) {
           currentRoomCode = data.code;
           myRole = data.role;
           lastSeq = data.latest_seq || 0;
@@ -939,17 +1000,20 @@
           document.getElementById('activeRoomBadge').textContent = '#' + currentRoomCode;
           document.getElementById('roleLabel').textContent = `Role: ${myRole} (You)`;
 
+          // Attach haptics to new dashboard buttons
+          initAllHaptics();
+
           updatePartnerUI(data.connected, data.partner_name);
           startSyncPolling();
           triggerDeviceHaptic([60, 40, 60], 'Connected');
         } else {
           alert(data.error || 'Could not connect to room');
-          btn.textContent = 'Connect & Unlock Haptics →';
+          btn.textContent = 'Connect Devices →';
           btn.style.opacity = '1';
         }
       } catch (err) {
         alert('Connection error: ' + err.message);
-        btn.textContent = 'Connect & Unlock Haptics →';
+        btn.textContent = 'Connect Devices →';
         btn.style.opacity = '1';
       }
     }
@@ -975,8 +1039,8 @@
 
     function startSyncPolling() {
       if (syncInterval) clearInterval(syncInterval);
-      // Fast polling (320ms) for snappy real-time responsiveness
-      syncInterval = setInterval(pollSync, 320);
+      // Fast polling (300ms) for snappy real-time responsiveness
+      syncInterval = setInterval(pollSync, 300);
     }
 
     async function pollSync() {
@@ -995,7 +1059,7 @@
             data.events.forEach(ev => {
               if (ev.id > lastSeq) {
                 lastSeq = ev.id;
-                // RECEIVE VIBRATION FROM PARTNER!
+                // RECEIVE SILENT VIBRATION FROM PARTNER!
                 onReceivePartnerVibe(ev);
               }
             });
@@ -1013,7 +1077,7 @@
       const styleName = ev.style || 'Tap';
       const pattern = ev.pattern || [100];
 
-      // Trigger local haptic on THIS device!
+      // Trigger silent physical haptic on THIS device!
       triggerDeviceHaptic(pattern, styleName);
 
       document.getElementById('lastEventLabel').innerHTML = `⚡ Received: <span style="color:var(--accent);">${styleName.toUpperCase()}</span>`;
@@ -1033,7 +1097,7 @@
       currentRoomCode = '';
       document.getElementById('dashboardView').classList.add('hidden');
       document.getElementById('pairingView').classList.remove('hidden');
-      document.getElementById('btnConnect').textContent = 'Connect & Unlock Haptics →';
+      document.getElementById('btnConnect').textContent = 'Connect Devices →';
       document.getElementById('btnConnect').style.opacity = '1';
       document.getElementById('devicePill').classList.remove('connected');
       document.getElementById('devicePillText').textContent = 'Offline';
@@ -1045,14 +1109,14 @@
     async function sendVibeEvent(style, pattern, continuous = false) {
       if (!currentRoomCode) return;
 
-      // 1. Immediately trigger local haptic feedback for instant tactile response!
+      // 1. Immediately trigger local silent haptic feedback for instant tactile response!
       triggerDeviceHaptic(pattern, style);
 
       // 2. Transmit to partner device
       try {
         await fetch('/api/ahmedtest/send/', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             code: currentRoomCode,
             device_id: deviceId,
@@ -1065,18 +1129,15 @@
     }
 
     function sendVibeStyle(name, pattern) {
-      initAudioContext();
       sendVibeEvent(name, pattern, false);
-      document.getElementById('lastEventLabel').innerHTML = `📤 Sent: <span style="color:var(--primary);">${name.toUpperCase()}</span>`;
-      document.getElementById('lastEventSub').textContent = `Sent to partner at ${new Date().toLocaleTimeString()}`;
+      document.getElementById('lastEventLabel').innerHTML = `📤 Sent: <span style="color:var(--prim    ;">${name.toUpperCase()}</span>`;
+      document.getElementById('lastEven       textContent = `Sent to partner at ${new Date()       leTimeString()}`;
     }
 
     /* --- TAP-PAD CONTINUOUS RAPID FIRE --- */
     const tapPad = document.getElementById('tapPad');
 
     function handlePadTap(e) {
-      e.preventDefault();
-      initAudioContext();
       tapCount++;
       document.getElementById('tapCounter').textContent = `${tapCount} TAPS SENT`;
 
@@ -1088,7 +1149,7 @@
       const ripple = document.createElement('div');
       ripple.className = 'ripple';
       ripple.style.left = `${x}px`;
-      ripple.style.top = `${y}px`;
+      ripple.style.to p = `${y}px`;
       ripple.style.width = '60px';
       ripple.style.height = '60px';
       ripple.style.marginLeft = '-30px';
@@ -1097,7 +1158,7 @@
       setTimeout(() => ripple.remove(), 450);
 
       // Send instant crisp pulse
-      sendVibeEvent('tap', [70], false);
+      sendVibeEvent('tap', [80], false);
     }
 
     tapPad.addEventListener('pointerdown', handlePadTap);
@@ -1107,8 +1168,6 @@
     let holdTimer = null;
 
     function startContinuousHold(e) {
-      e.preventDefault();
-      initAudioContext();
       holdBtn.classList.add('holding');
 
       // Send immediately
@@ -1133,10 +1192,10 @@
     holdBtn.addEventListener('pointercancel', stopContinuousHold);
     holdBtn.addEventListener('mouseleave', stopContinuousHold);
 
-    // Document-level user gesture unlock for audio and haptics
-    window.addEventListener('touchstart', initAudioContext, { passive: true, once: true });
-    window.addEventListener('click', initAudioContext, { passive: true, once: true });
+    // Initialize all haptic elements on page load
+    window.addEventListener('DOMConte    ed', initAllHaptics);
+    initAllHaptics();
   </script>
 </body>
-</html>
 
+</html>
