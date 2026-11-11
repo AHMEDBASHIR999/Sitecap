@@ -1,15 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#090d16">
   <title>AhmedTest - Realtime Haptic & Vibration Sync</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
+    rel="stylesheet">
   <style>
     :root {
       --bg: #090d16;
@@ -48,14 +52,37 @@
 
     /* Screen shake animation for incoming vibrations */
     @keyframes screenVibrate {
-      0% { transform: translate(0, 0) rotate(0deg); }
-      15% { transform: translate(-3px, 3px) rotate(-0.5deg); }
-      30% { transform: translate(3px, -3px) rotate(0.5deg); }
-      45% { transform: translate(-4px, -1px) rotate(-0.5deg); }
-      60% { transform: translate(4px, 2px) rotate(0.5deg); }
-      75% { transform: translate(-2px, -3px) rotate(0deg); }
-      90% { transform: translate(2px, 3px) rotate(0.5deg); }
-      100% { transform: translate(0, 0) rotate(0deg); }
+      0% {
+        transform: translate(0, 0) rotate(0deg);
+      }
+
+      15% {
+        transform: translate(-3px, 3px) rotate(-0.5deg);
+      }
+
+      30% {
+        transform: translate(3px, -3px) rotate(0.5deg);
+      }
+
+      45% {
+        transform: translate(-4px, -1px) rotate(-0.5deg);
+      }
+
+      60% {
+        transform: translate(4px, 2px) rotate(0.5deg);
+      }
+
+      75% {
+        transform: translate(-2px, -3px) rotate(0deg);
+      }
+
+      90% {
+        transform: translate(2px, 3px) rotate(0.5deg);
+      }
+
+      100% {
+        transform: translate(0, 0) rotate(0deg);
+      }
     }
 
     body.vibrating {
@@ -135,6 +162,7 @@
       border-color: rgba(16, 185, 129, 0.3);
       color: #34d399;
     }
+
     .device-pill.connected .dot {
       background: #34d399;
       box-shadow: 0 0 8px #34d399;
@@ -293,9 +321,20 @@
     }
 
     @keyframes pulseAnim {
-      0% { transform: scale(0.9); opacity: 1; }
-      50% { transform: scale(1.4); opacity: 0.4; }
-      100% { transform: scale(0.9); opacity: 1; }
+      0% {
+        transform: scale(0.9);
+        opacity: 1;
+      }
+
+      50% {
+        transform: scale(1.4);
+        opacity: 0.4;
+      }
+
+      100% {
+        transform: scale(0.9);
+        opacity: 1;
+      }
     }
 
     /* BIG TAP-TAP CONTINUOUS TOUCHPAD */
@@ -320,7 +359,8 @@
       transition: all 0.15s ease;
     }
 
-    .tap-pad:active, .tap-pad.active-touch {
+    .tap-pad:active,
+    .tap-pad.active-touch {
       transform: scale(0.98);
       border-color: var(--accent);
       background: radial-gradient(circle at center, rgba(244, 63, 94, 0.4) 0%, rgba(20, 20, 45, 0.95) 80%);
@@ -432,7 +472,8 @@
       padding: 16px 18px;
     }
 
-    .vibe-btn.special-hold:active, .vibe-btn.special-hold.holding {
+    .vibe-btn.special-hold:active,
+    .vibe-btn.special-hold.holding {
       background: linear-gradient(135deg, rgba(244, 63, 94, 0.35), rgba(168, 85, 247, 0.35));
       border-color: var(--accent);
       box-shadow: 0 0 30px var(--accent-glow);
@@ -507,13 +548,27 @@
       background: var(--accent);
       animation: waveBar 0.4s ease-in-out infinite alternate;
     }
-    .vibe-wave-anim.active .vibe-bar:nth-child(2) { animation-delay: 0.1s; }
-    .vibe-wave-anim.active .vibe-bar:nth-child(3) { animation-delay: 0.2s; }
-    .vibe-wave-anim.active .vibe-bar:nth-child(4) { animation-delay: 0.3s; }
+
+    .vibe-wave-anim.active .vibe-bar:nth-child(2) {
+      animation-delay: 0.1s;
+    }
+
+    .vibe-wave-anim.active .vibe-bar:nth-child(3) {
+      animation-delay: 0.2s;
+    }
+
+    .vibe-wave-anim.active .vibe-bar:nth-child(4) {
+      animation-delay: 0.3s;
+    }
 
     @keyframes waveBar {
-      0% { height: 4px; }
-      100% { height: 16px; }
+      0% {
+        height: 4px;
+      }
+
+      100% {
+        height: 16px;
+      }
     }
 
     /* Settings & Options */
@@ -574,6 +629,7 @@
     }
   </style>
 </head>
+
 <body>
 
   <!-- Fullscreen vibration flash effect -->
@@ -605,7 +661,8 @@
 
       <div class="pin-group">
         <div class="pin-input-wrap">
-          <input type="text" id="roomCodeInput" class="pin-input" placeholder="123" maxlength="8" value="123" autocomplete="off" autocorrect="off" autocapitalize="characters">
+          <input type="text" id="roomCodeInput" class="pin-input" placeholder="123" maxlength="8" value="123"
+            autocomplete="off" autocorrect="off" autocapitalize="characters">
         </div>
         <div class="quick-codes">
           <button type="button" class="quick-code-btn" onclick="setQuickCode('123')">123</button>
@@ -626,13 +683,16 @@
       </div>
 
       <!-- iOS Notice Card -->
-      <div id="iosSafariNotice" class="hidden" style="margin-top: 14px; padding: 12px 14px; border-radius: 12px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); font-size: 12px; line-height: 1.5; color: #fbbf24;">
+      <div id="iosSafariNotice" class="hidden"
+        style="margin-top: 14px; padding: 12px 14px; border-radius: 12px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); font-size: 12px; line-height: 1.5; color: #fbbf24;">
         <div style="font-weight: 700; display:flex; align-items:center; gap:6px; margin-bottom:4px; color: #fde68a;">
           <span>⚠️</span> Apple iPhone Guide:
         </div>
         <ul style="padding-left: 18px; margin: 4px 0;">
           <li><strong>Must open in Apple Safari:</strong> Google Chrome on iOS blocks native haptics.</li>
-          <li><strong>iOS Setting:</strong> Ensure <em>Settings → Sounds & Haptics → System Haptics</em> is turned <strong>ON</strong>.</li>
+          <li><strong>iOS Setting:</strong> Ensure <em>Settings → Sounds & Haptics → System Haptics</em> is turned
+            <strong>ON</strong>.
+          </li>
         </ul>
       </div>
     </div>
@@ -670,7 +730,9 @@
           <span class="icon">💓</span>
           <span class="name">Heartbeat</span>
           <span class="desc">Rhythmic double thump</span>
-          <div class="meter"><div class="meter-fill" style="width: 50%;"></div></div>
+          <div class="meter">
+            <div class="meter-fill" style="width: 50%;"></div>
+          </div>
         </div>
 
         <!-- Rapid Staccato -->
@@ -678,7 +740,9 @@
           <span class="icon">⚡</span>
           <span class="name">Rapid Burst</span>
           <span class="desc">Fast machine-gun pulses</span>
-          <div class="meter"><div class="meter-fill" style="width: 80%; background:#f59e0b;"></div></div>
+          <div class="meter">
+            <div class="meter-fill" style="width: 80%; background:#f59e0b;"></div>
+          </div>
         </div>
 
         <!-- Heavy Buzz -->
@@ -686,15 +750,20 @@
           <span class="icon">🐝</span>
           <span class="name">Heavy Buzz</span>
           <span class="desc">Solid deep motor buzz</span>
-          <div class="meter"><div class="meter-fill" style="width: 100%; background:var(--accent);"></div></div>
+          <div class="meter">
+            <div class="meter-fill" style="width: 100%; background:var(--accent);"></div>
+          </div>
         </div>
 
         <!-- SOS Alert -->
-        <div class="vibe-btn" onclick="sendVibeStyle('sos', [100, 100, 100, 100, 100, 200, 300, 100, 300, 100, 300, 200, 100, 100, 100])">
+        <div class="vibe-btn"
+          onclick="sendVibeStyle('sos', [100, 100, 100, 100, 100, 200, 300, 100, 300, 100, 300, 200, 100, 100, 100])">
           <span class="icon">🚨</span>
           <span class="name">SOS Pattern</span>
           <span class="desc">... --- ... Emergency alert</span>
-          <div class="meter"><div class="meter-fill" style="width: 70%; background:#ec4899;"></div></div>
+          <div class="meter">
+            <div class="meter-fill" style="width: 70%; background:#ec4899;"></div>
+          </div>
         </div>
 
         <!-- Special Hold for Continuous Vibration -->
@@ -721,10 +790,12 @@
           </div>
           <div>
             <div style="font-weight:700;" id="lastEventLabel">Ready for incoming vibrations</div>
-            <div style="font-size:11px; color:var(--text-muted);" id="lastEventSub">Silent physical vibration only (no sound)</div>
+            <div style="font-size:11px; color:var(--text-muted);" id="lastEventSub">Silent physical vibration only (no
+              sound)</div>
           </div>
         </div>
-        <button type="button" class="quick-code-btn" id="btnTestHaptic" style="padding:6px 10px; font-size:11px;" onclick="testLocalHaptics()">
+        <button type="button" class="quick-code-btn" id="btnTestHaptic" style="padding:6px 10px; font-size:11px;"
+          onclick="testLocalHaptics()">
           🧪 Test Haptic
         </button>
       </div>
@@ -738,12 +809,12 @@
       </div>
     </div>
   </div>
-        <span id="roleLabel">Role: Device 1</span>
-        <button type="button" class="quick-code-btn" style="color:#f43f5e;" onclick="disconnectRoom()">
-          Disconnect
-        </button>
-      </div>
-    </div>
+  <span id="roleLabel">Role: Device 1</span>
+  <button type="button" class="quick-code-btn" style="color:#f43f5e;" onclick="disconnectRoom()">
+    Disconnect
+  </button>
+  </div>
+  </div>
   </div>
 
   <script>
@@ -851,7 +922,7 @@
       if (hasVibrator) {
         try {
           navigator.vibrate(pattern);
-        } catch (e) {}
+        } catch (e) { }
       }
 
       // 2. Programmatically toggle an active haptic switch on iOS
@@ -1025,7 +1096,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ code: currentRoomCode, device_id: deviceId })
         });
-      } catch (e) {}
+      } catch (e) { }
 
       currentRoomCode = '';
       document.getElementById('dashboardView').classList.add('hidden');
@@ -1058,7 +1129,7 @@
             continuous: continuous
           })
         });
-      } catch (e) {}
+      } catch (e) { }
     }
 
     function sendVibeStyle(name, pattern) {
@@ -1130,5 +1201,5 @@
     initAllHaptics();
   </script>
 </body>
-</html>
 
+</html>
