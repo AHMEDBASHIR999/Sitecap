@@ -1,0 +1,1967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eBay vs AliExpress Turbo Pro Visual Research</title>
+    <style>
+        :root {
+            --bg-main: #0b0f19;
+            --bg-card: #111827;
+            --bg-card-sub: #1f2937;
+            --bg-input: #0f172a;
+            --border-color: #374151;
+            --border-focus: #3b82f6;
+            --text-main: #f9fafb;
+            --text-muted: #9ca3af;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --accent: #f97316;
+            --accent-hover: #ea580c;
+            --success: #10b981;
+            --success-bg: rgba(16, 185, 129, 0.15);
+            --warning: #f59e0b;
+            --warning-bg: rgba(245, 158, 11, 0.15);
+            --danger: #ef4444;
+            --danger-bg: rgba(239, 68, 68, 0.15);
+            --ebay-blue: #3b82f6;
+            --ali-orange: #f97316;
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 14px;
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Top Navigation Header */
+        header.app-header {
+            background: linear-gradient(180deg, #131b2e 0%, #0e1526 100%);
+            border-bottom: 1px solid var(--border-color);
+            padding: 14px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(12px);
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-logo {
+            background: linear-gradient(135deg, #2563eb, #f97316);
+            color: white;
+            font-weight: 900;
+            font-size: 18px;
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 10px rgba(37, 99, 235, 0.4);
+        }
+
+        .brand-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .brand-badge {
+            font-size: 11px;
+            text-transform: uppercase;
+            font-weight: 700;
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.4);
+            padding: 2px 7px;
+            border-radius: 9999px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            padding: 6px 12px;
+            background: var(--bg-card-sub);
+            border: 1px solid var(--border-color);
+            border-radius: 9999px;
+            color: var(--text-muted);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 8px var(--success);
+        }
+        .status-dot.idle { background: #9ca3af; box-shadow: none; }
+        .status-dot.warning { background: var(--warning); box-shadow: 0 0 8px var(--warning); }
+        .status-dot.danger { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: var(--radius-sm);
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            user-select: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #1d4ed8, #1e40af);
+            transform: translateY(-1px);
+        }
+
+        .btn-accent {
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(249, 115, 22, 0.35);
+        }
+        .btn-accent:hover {
+            background: linear-gradient(135deg, #ea580c, #c2410c);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--bg-card-sub);
+            color: var(--text-main);
+            border-color: var(--border-color);
+        }
+        .btn-secondary:hover {
+            background: #283548;
+            border-color: #4b5563;
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--text-muted);
+            border-color: var(--border-color);
+        }
+        .btn-outline:hover {
+            color: var(--text-main);
+            border-color: #6b7280;
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+
+        .btn-lg {
+            padding: 12px 24px;
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        /* Container & Layout */
+        .main-container {
+            max-width: 1560px;
+            margin: 0 auto;
+            padding: 24px;
+            width: 100%;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Country Tabs Selector */
+        .country-tabs-bar {
+            display: flex;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            padding: 6px;
+            border-radius: var(--radius-md);
+            gap: 6px;
+            align-items: center;
+        }
+
+        .country-tab {
+            flex: 1;
+            padding: 10px 16px;
+            text-align: center;
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid transparent;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .country-tab:hover {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .country-tab.active {
+            background: linear-gradient(135deg, #1e3a8a, #2563eb);
+            color: #ffffff;
+            border-color: #3b82f6;
+            box-shadow: 0 2px 10px rgba(37, 99, 235, 0.3);
+        }
+
+        .country-tag {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        /* Input Card Section */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 22px;
+            box-shadow: var(--shadow);
+            position: relative;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-subtitle {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 3px;
+        }
+
+        .links-input-wrapper {
+            position: relative;
+            margin-bottom: 14px;
+        }
+
+        textarea.links-textarea {
+            width: 100%;
+            height: 160px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            color: #f3f4f6;
+            font-family: monospace;
+            font-size: 13px;
+            padding: 14px 16px;
+            resize: vertical;
+            line-height: 1.5;
+            transition: border-color 0.2s ease;
+        }
+
+        textarea.links-textarea:focus {
+            outline: none;
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+        }
+
+        .input-actions-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .input-helpers {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .links-counter-pill {
+            font-size: 12px;
+            background: var(--bg-card-sub);
+            border: 1px solid var(--border-color);
+            color: #93c5fd;
+            padding: 6px 12px;
+            border-radius: 9999px;
+            font-weight: 600;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .select-input, .text-input {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-main);
+            padding: 8px 12px;
+            font-size: 13px;
+        }
+
+        .select-input:focus, .text-input:focus {
+            outline: none;
+            border-color: var(--border-focus);
+        }
+
+        /* Real-Time Progress Bar */
+        .progress-box {
+            display: none;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 18px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .progress-title {
+            font-size: 14px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #93c5fd;
+        }
+
+        .progress-pct {
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .progress-track {
+            width: 100%;
+            height: 8px;
+            background: #1f2937;
+            border-radius: 9999px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #3b82f6, #f97316);
+            border-radius: 9999px;
+            transition: width 0.3s ease;
+        }
+
+        .log-box {
+            margin-top: 12px;
+            background: #090d16;
+            border: 1px solid #1f2937;
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            max-height: 120px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            color: #94a3b8;
+            line-height: 1.6;
+        }
+
+        .log-entry {
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        /* Toasts and Alerts */
+        #toast-container {
+            position: fixed;
+            top: 76px;
+            right: 24px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 440px;
+            width: calc(100% - 48px);
+            pointer-events: none;
+        }
+
+        .toast {
+            pointer-events: auto;
+            background: #1e293b;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 14px 18px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            animation: slideInRight 0.3s ease-out;
+            color: #fff;
+            position: relative;
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .toast.toast-danger {
+            background: #2a1215;
+            border-color: #ef4444;
+        }
+        .toast.toast-warning {
+            background: #2a2010;
+            border-color: #f59e0b;
+        }
+        .toast.toast-success {
+            background: #0d261b;
+            border-color: #10b981;
+        }
+        .toast.toast-info {
+            background: #101e38;
+            border-color: #3b82f6;
+        }
+
+        .toast-icon {
+            font-size: 18px;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .toast-body {
+            flex: 1;
+        }
+
+        .toast-title {
+            font-size: 13.5px;
+            font-weight: 700;
+            margin-bottom: 3px;
+        }
+
+        .toast-msg {
+            font-size: 12px;
+            color: #d1d5db;
+            line-height: 1.4;
+        }
+
+        .toast-action {
+            margin-top: 8px;
+        }
+
+        .toast-close {
+            background: transparent;
+            border: none;
+            color: #9ca3af;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 0 4px;
+            line-height: 1;
+        }
+        .toast-close:hover { color: #fff; }
+
+        /* KPI Stat Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 16px 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: #3b82f6;
+        }
+        .stat-card.orange::after { background: #f97316; }
+        .stat-card.green::after { background: #10b981; }
+        .stat-card.yellow::after { background: #f59e0b; }
+        .stat-card.purple::after { background: #8b5cf6; }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 26px;
+            font-weight: 800;
+            color: #fff;
+        }
+
+        .stat-sub {
+            font-size: 11.5px;
+            color: #94a3b8;
+        }
+
+        /* Results Toolbar */
+        .results-toolbar {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 14px 18px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+        }
+
+        .toolbar-left, .toolbar-right {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .search-input {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: #f8fafc;
+            padding: 7px 12px;
+            font-size: 13px;
+            min-width: 220px;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--border-focus);
+        }
+
+        /* Results Table View */
+        .table-wrapper {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            max-height: 780px;
+            overflow-y: auto;
+        }
+
+        table.research-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            text-align: left;
+        }
+
+        table.research-table th {
+            position: sticky;
+            top: 0;
+            background: #0d1424;
+            color: #94a3b8;
+            padding: 14px 10px;
+            border-bottom: 2px solid var(--border-color);
+            font-weight: 700;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            z-index: 10;
+            text-align: center;
+        }
+
+        table.research-table td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #1f2937;
+            vertical-align: middle;
+            color: #e5e7eb;
+        }
+
+        table.research-table tr:hover {
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .c { text-align: center !important; }
+        .b { font-weight: 700; }
+
+        /* Thumbnails */
+        .thumb {
+            width: 66px;
+            height: 66px;
+            object-fit: contain;
+            border-radius: 8px;
+            cursor: zoom-in;
+            background: #0b0f19;
+            transition: transform 0.15s ease;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        .thumb:hover { transform: scale(1.05); }
+        .thumb.eb { border: 2px solid var(--ebay-blue); }
+        .thumb.al { border: 2px solid var(--ali-orange); }
+
+        .noimg {
+            width: 66px;
+            height: 66px;
+            line-height: 66px;
+            font-size: 11px;
+            color: #64748b;
+            background: #0f172a;
+            border-radius: 8px;
+            text-align: center;
+            margin: auto;
+            border: 1px dashed #334155;
+        }
+
+        /* Badges */
+        .badge {
+            background: rgba(37, 99, 235, 0.2);
+            color: #93c5fd;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            padding: 3px 8px;
+            border-radius: 9999px;
+            font-size: 11px;
+            font-weight: 700;
+            display: inline-block;
+        }
+
+        .sbadge {
+            padding: 3px 8px;
+            border-radius: 9999px;
+            font-weight: 700;
+            font-size: 11px;
+            display: inline-block;
+        }
+        .sbadge.hot { background: #064e3b; color: #6ee7b7; border: 1px solid #059669; }
+        .sbadge.some { background: #713f12; color: #fde047; border: 1px solid #a16207; }
+        .sbadge.zero { background: #1f2937; color: #9ca3af; border: 1px solid #374151; }
+
+        .mbadge {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 10px;
+            display: inline-block;
+        }
+        .mbadge.mhigh { background: #064e3b; color: #6ee7b7; }
+        .mbadge.mmid { background: #713f12; color: #fde047; }
+        .mbadge.mlow { background: #7f1d1d; color: #fca5a5; }
+
+        .tbadge {
+            background: #78350f;
+            color: #fef08a;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 10px;
+            margin-right: 4px;
+        }
+
+        .m-tabs {
+            margin-top: 6px;
+            display: flex;
+            gap: 4px;
+            justify-content: center;
+        }
+
+        .mtab {
+            border: 1px solid #374151;
+            background: #0f172a;
+            color: #9ca3af;
+            font-size: 10px;
+            padding: 2px 7px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .mtab:hover { background: #1e293b; color: #fff; }
+        .mtab.active {
+            background: #2563eb;
+            color: #ffffff;
+            border-color: #3b82f6;
+            font-weight: 700;
+        }
+
+        .aprice { color: #fb923c; font-weight: 700; }
+        .ppos {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+        }
+        .pneg {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+        }
+
+        .abtn {
+            background: linear-gradient(135deg, #ea580c, #f97316);
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 11.5px;
+            font-weight: 700;
+            display: inline-block;
+            box-shadow: 0 2px 8px rgba(234, 88, 12, 0.35);
+            transition: transform 0.15s ease;
+        }
+        .abtn:hover {
+            transform: translateY(-1px);
+            background: linear-gradient(135deg, #c2410c, #ea580c);
+        }
+
+        .ilink {
+            color: #60a5fa;
+            text-decoration: none;
+            font-weight: 600;
+            line-height: 1.4;
+            display: block;
+        }
+        .ilink:hover { text-decoration: underline; color: #93c5fd; }
+
+        .meta {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+
+        /* Modal & Drawer */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(4px);
+        }
+
+        .mbox {
+            background: #111827;
+            border: 1px solid var(--border-color);
+            padding: 22px;
+            border-radius: var(--radius-lg);
+            max-width: 620px;
+            width: 90%;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
+        }
+
+        .mbox img {
+            max-width: 100%;
+            max-height: 520px;
+            object-fit: contain;
+            border-radius: 8px;
+            background: #000;
+        }
+
+        .cbtn {
+            position: absolute;
+            top: -14px;
+            right: -14px;
+            background: #ef4444;
+            color: #fff;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+        }
+        .cbtn:hover { background: #dc2626; }
+
+        /* Settings Drawer Modal */
+        .settings-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.75);
+            z-index: 999;
+            justify-content: flex-end;
+            backdrop-filter: blur(3px);
+        }
+
+        .settings-drawer {
+            background: #111827;
+            border-left: 1px solid var(--border-color);
+            width: 520px;
+            max-width: 95vw;
+            height: 100%;
+            padding: 24px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            animation: slideInRight 0.25s ease-out;
+            box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .drawer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 16px;
+        }
+
+        .drawer-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-section {
+            background: var(--bg-card-sub);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .section-heading {
+            font-size: 13px;
+            font-weight: 700;
+            color: #93c5fd;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .form-field {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .field-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #cbd5e1;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .input-group {
+            display: flex;
+            position: relative;
+        }
+
+        .input-group input {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: #f8fafc;
+            padding: 8px 12px;
+            font-size: 12.5px;
+            font-family: monospace;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--border-focus);
+        }
+
+        .toggle-vis-btn {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            border: none;
+            color: #9ca3af;
+            cursor: pointer;
+            font-size: 12px;
+            padding: 2px;
+        }
+
+        .empty-state {
+            padding: 60px 20px;
+            text-align: center;
+            color: var(--text-muted);
+        }
+
+        .empty-icon {
+            font-size: 42px;
+            margin-bottom: 12px;
+            opacity: 0.7;
+        }
+
+        /* Responsive tweaks */
+        @media (max-width: 768px) {
+            header.app-header { padding: 12px 16px; }
+            .main-container { padding: 14px; }
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+            .country-tabs-bar { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top Application Bar -->
+    <header class="app-header">
+        <div class="header-brand">
+            <span class="brand-logo">⚡ TURBO</span>
+            <div class="brand-title">
+                eBay vs AliExpress Visual Research
+                <span class="brand-badge">PRO AI</span>
+            </div>
+        </div>
+        <div class="header-actions">
+            <div class="status-pill" id="model-status-pill" title="CLIP AI Visual Model Status">
+                <span class="status-dot" id="model-dot"></span>
+                <span id="model-label">AI Model: Ready</span>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="openSettingsModal()">
+                <span>🔑</span> API Credentials & Keys
+            </button>
+        </div>
+    </header>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container"></div>
+
+    <!-- Main Content Area -->
+    <main class="main-container">
+
+        <!-- Country / Marketplace Selector -->
+        <div class="country-tabs-bar">
+            <button class="country-tab active" data-country="UK" onclick="selectCountry('UK', this)">
+                <span style="font-size: 16px">🇬🇧</span>
+                <span>United Kingdom</span>
+                <span class="country-tag">EBAY_GB &bull; &pound; GBP</span>
+            </button>
+            <button class="country-tab" data-country="USA" onclick="selectCountry('USA', this)">
+                <span style="font-size: 16px">🇺🇸</span>
+                <span>United States</span>
+                <span class="country-tag">EBAY_US &bull; $ USD</span>
+            </button>
+            <button class="country-tab" data-country="AUS" onclick="selectCountry('AUS', this)">
+                <span style="font-size: 16px">🇦🇺</span>
+                <span>Australia</span>
+                <span class="country-tag">EBAY_AU &bull; AU$ AUD</span>
+            </button>
+            <button class="country-tab" data-country="AUTO" onclick="selectCountry('AUTO', this)">
+                <span style="font-size: 16px">🌐</span>
+                <span>Auto-Detect</span>
+                <span class="country-tag">Mixed Links</span>
+            </button>
+        </div>
+
+        <!-- Links Input & Run Card -->
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <h3 class="card-title">
+                        <span>📋</span> eBay Product Links & Item IDs
+                    </h3>
+                    <p class="card-subtitle">
+                        Paste eBay item URLs or raw text. 12-digit item IDs and sold counts are automatically extracted.
+                    </p>
+                </div>
+                <div class="links-counter-pill" id="detected-counter">0 Item IDs Detected</div>
+            </div>
+
+            <div class="links-input-wrapper">
+                <textarea 
+                    id="links-textarea" 
+                    class="links-textarea" 
+                    placeholder="Paste eBay product links, lines from links.txt, or 12-digit eBay item IDs here...&#10;Example: https://www.ebay.co.uk/itm/123456789012 (sold 15)&#10;Or: 395982145678"
+                    oninput="onLinksInput()"
+                ></textarea>
+            </div>
+
+            <div class="input-actions-bar">
+                <div class="input-helpers">
+                    <button class="btn btn-outline btn-sm" onclick="pasteClipboard()">
+                        <span>📋</span> Paste
+                    </button>
+                    <button class="btn btn-outline btn-sm" onclick="loadSampleLinks()">
+                        <span>💡</span> Load Sample Links
+                    </button>
+                    <label class="btn btn-outline btn-sm" style="cursor: pointer; margin: 0">
+                        <span>📁</span> Upload .txt / .csv
+                        <input type="file" id="file-upload" accept=".txt,.csv" style="display:none" onchange="handleFileUpload(event)">
+                    </label>
+                    <button class="btn btn-outline btn-sm" onclick="clearLinks()">
+                        <span>🗑️</span> Clear
+                    </button>
+                </div>
+
+                <div class="control-group">
+                    <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted)">
+                        <span>Limit:</span>
+                        <select id="max-items-select" class="select-input">
+                            <option value="20">20 Items</option>
+                            <option value="50">50 Items</option>
+                            <option value="100">100 Items</option>
+                            <option value="all">All Items</option>
+                        </select>
+                    </div>
+
+                    <button class="btn btn-accent btn-lg" id="run-btn" onclick="startResearch()">
+                        <span>🚀</span> Run Turbo Visual Search
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Real-Time Progress Box -->
+        <div class="progress-box" id="progress-box">
+            <div class="progress-header">
+                <div class="progress-title">
+                    <span class="status-dot"></span>
+                    <span id="progress-status-text">Processing items...</span>
+                </div>
+                <div class="progress-pct" id="progress-pct">0%</div>
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <div class="log-box" id="log-box"></div>
+        </div>
+
+        <!-- Results Dashboard Section -->
+        <div id="results-section" style="display: none">
+            
+            <!-- KPI Summary Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Unique eBay Items</div>
+                    <div class="stat-value" id="kpi-total">0</div>
+                    <div class="stat-sub" id="kpi-links-count">From 0 raw links</div>
+                </div>
+                <div class="stat-card green">
+                    <div class="stat-label">70%+ Visual Matches</div>
+                    <div class="stat-value" id="kpi-matches-70">0</div>
+                    <div class="stat-sub">High confidence supplier match</div>
+                </div>
+                <div class="stat-card orange">
+                    <div class="stat-label">Avg Profit Spread</div>
+                    <div class="stat-value" id="kpi-avg-spread">$0.00</div>
+                    <div class="stat-sub">eBay price - Ali price</div>
+                </div>
+                <div class="stat-card yellow">
+                    <div class="stat-label">Hot Selling Items</div>
+                    <div class="stat-value" id="kpi-hot-sellers">0</div>
+                    <div class="stat-sub">&ge; 5 verified sold units</div>
+                </div>
+                <div class="stat-card purple">
+                    <div class="stat-label">Total Execution</div>
+                    <div class="stat-value" id="kpi-elapsed">0s</div>
+                    <div class="stat-sub" id="kpi-target-mkt">Market: UK</div>
+                </div>
+            </div>
+
+            <!-- Toolbar Filters -->
+            <div class="results-toolbar">
+                <div class="toolbar-left">
+                    <select id="sort-select" class="select-input" onchange="filterAndSortTable()">
+                        <option value="listed_desc">Sort: Most Recently Listed</option>
+                        <option value="score_desc">Sort: Best Visual Match %</option>
+                        <option value="sold_desc">Sort: Most Sold</option>
+                        <option value="spread_desc">Sort: Highest Profit Spread</option>
+                        <option value="price_asc">Sort: Price Low to High</option>
+                        <option value="price_desc">Sort: Price High to Low</option>
+                    </select>
+
+                    <input 
+                        type="text" 
+                        id="include-keyword" 
+                        class="search-input" 
+                        placeholder="Search title or seller keyword..." 
+                        oninput="filterAndSortTable()"
+                    >
+
+                    <input 
+                        type="text" 
+                        id="exclude-keyword" 
+                        class="search-input" 
+                        placeholder="Exclude keywords (comma separated)..." 
+                        style="background: #251216; border-color: #7f1d1d; color: #fca5a5"
+                        oninput="filterAndSortTable()"
+                    >
+
+                    <select id="filter-preset" class="select-input" onchange="filterAndSortTable()">
+                        <option value="all">Filter: All Listings</option>
+                        <option value="ali_70">Filter: Only 70%+ AliExpress Matches</option>
+                        <option value="sold_only">Filter: Only With Sold Data</option>
+                        <option value="profitable_only">Filter: Profitable Spread (> 0)</option>
+                    </select>
+                </div>
+
+                <div class="toolbar-right">
+                    <div style="font-size: 13px; color: var(--text-muted); font-weight: 600">
+                        Showing: <span id="visible-count" style="color: #60a5fa">0</span> items
+                    </div>
+                    <button class="btn btn-secondary btn-sm" onclick="exportData('html')">
+                        <span>📥</span> Export HTML
+                    </button>
+                    <button class="btn btn-secondary btn-sm" onclick="exportData('csv')">
+                        <span>📊</span> CSV
+                    </button>
+                    <button class="btn btn-secondary btn-sm" onclick="exportData('json')">
+                        <span>📄</span> JSON
+                    </button>
+                </div>
+            </div>
+
+            <!-- Interactive Results Table -->
+            <div class="table-wrapper">
+                <table class="research-table" id="research-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px">#</th>
+                            <th style="width: 80px">eBay Photo</th>
+                            <th style="width: 80px">Ali Photo</th>
+                            <th style="width: 70px">Listed Age</th>
+                            <th style="width: 85px">Total Sold</th>
+                            <th style="width: 85px">eBay Price</th>
+                            <th style="width: 95px">Ali Price</th>
+                            <th style="width: 90px">Spread</th>
+                            <th>Product Title & Seller Details</th>
+                            <th style="width: 175px">Supplier / Matches</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+                        <!-- Populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Image Zoom Modal -->
+    <div id="image-modal" class="modal" onclick="closeImageModal()">
+        <div class="mbox" onclick="event.stopPropagation()">
+            <button class="cbtn" onclick="closeImageModal()">×</button>
+            <img id="modal-img" src="" alt="Enlarged product image">
+            <div id="modal-title" style="margin-top: 14px; font-weight: 600; font-size: 14px; color: #f8fafc"></div>
+        </div>
+    </div>
+
+    <!-- API Credentials & Settings Drawer -->
+    <div id="settings-modal" class="settings-modal" onclick="closeSettingsModal()">
+        <div class="settings-drawer" onclick="event.stopPropagation()">
+            <div class="drawer-header">
+                <div class="drawer-title">
+                    <span>🔑</span> API Credentials & Keys
+                </div>
+                <button class="btn btn-outline btn-sm" onclick="closeSettingsModal()">✕ Close</button>
+            </div>
+
+            <p style="font-size: 12.5px; color: var(--text-muted); line-height: 1.5">
+                Credentials are stored directly in your browser cookies and local storage. When tokens expire or rate limits are reached, update them here and click Save.
+            </p>
+
+            <!-- eBay Credentials -->
+            <div class="form-section">
+                <div class="section-heading">
+                    <span>eBay Browse API</span>
+                    <button class="btn btn-outline btn-sm" onclick="testEbay()">Test Connection</button>
+                </div>
+                
+                <div class="form-field">
+                    <label class="field-label">
+                        <span>EBAY_CLIENT_ID (App ID)</span>
+                    </label>
+                    <div class="input-group">
+                        <input type="text" id="cfg-ebay-client" value="{{ default_ebay_client_id }}">
+                    </div>
+                </div>
+
+                <div class="form-field">
+                    <label class="field-label">
+                        <span>EBAY_CERT_ID (Client Secret)</span>
+                    </label>
+                    <div class="input-group">
+                        <input type="password" id="cfg-ebay-cert" value="{{ default_ebay_cert_id }}">
+                        <button type="button" class="toggle-vis-btn" onclick="toggleVis('cfg-ebay-cert')">👁</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AliExpress Credentials -->
+            <div class="form-section">
+                <div class="section-heading">
+                    <span>AliExpress Dropshipping API</span>
+                    <button class="btn btn-outline btn-sm" onclick="testAliExpress()">Test Connection</button>
+                </div>
+
+                <div class="form-field">
+                    <label class="field-label">
+                        <span>ALI_DS_KEY (App Key)</span>
+                    </label>
+                    <div class="input-group">
+                        <input type="text" id="cfg-ali-key" value="{{ default_ali_key }}">
+                    </div>
+                </div>
+
+                <div class="form-field">
+                    <label class="field-label">
+                        <span>ALI_DS_SECRET (App Secret)</span>
+                    </label>
+                    <div class="input-group">
+                        <input type="password" id="cfg-ali-secret" value="{{ default_ali_secret }}">
+                        <button type="button" class="toggle-vis-btn" onclick="toggleVis('cfg-ali-secret')">👁</button>
+                    </div>
+                </div>
+
+                <div class="form-field">
+                    <label class="field-label">
+                        <span>ALI_DS_TOKEN (Access Token)</span>
+                    </label>
+                    <div class="input-group">
+                        <input type="password" id="cfg-ali-token" value="{{ default_ali_token }}">
+                        <button type="button" class="toggle-vis-btn" onclick="toggleVis('cfg-ali-token')">👁</button>
+                    </div>
+                    <span style="font-size: 11px; color: #94a3b8">Refresh this token in AliExpress Open Platform when expired.</span>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div style="display: flex; gap: 10px; margin-top: auto; padding-top: 10px">
+                <button class="btn btn-primary" style="flex: 1" onclick="saveCredentials()">
+                    <span>💾</span> Save to Cookies
+                </button>
+                <button class="btn btn-secondary" onclick="resetDefaultCredentials()">
+                    Reset Defaults
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script>
+        // Global State
+        let currentCountry = 'UK';
+        let latestResults = [];
+        let latestSummary = {};
+
+        // Default Credentials (from backend context)
+        const DEFAULTS = {
+            ebay_client_id: "{{ default_ebay_client_id|escapejs }}",
+            ebay_cert_id: "{{ default_ebay_cert_id|escapejs }}",
+            ali_key: "{{ default_ali_key|escapejs }}",
+            ali_secret: "{{ default_ali_secret|escapejs }}",
+            ali_token: "{{ default_ali_token|escapejs }}"
+        };
+
+        // Sample Links for quick demo / testing
+        const SAMPLE_LINKS = `https://www.ebay.co.uk/itm/146039547890 28 sold
+https://www.ebay.co.uk/itm/395642879123 12 sold
+https://www.ebay.com/itm/235619842104 6 sold
+https://www.ebay.com.au/itm/315712498231 15 sold
+https://www.ebay.co.uk/itm/196612847952 0 sold`;
+
+        // Cookie helper functions
+        function setCookie(name, value, days = 365) {
+            const expires = new Date(Date.now() + days * 864e5).toUTCString();
+            document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + expires + '; path=/; SameSite=Lax';
+            localStorage.setItem(name, value);
+        }
+
+        function getCookie(name) {
+            const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+            if (match) return decodeURIComponent(match[2]);
+            return localStorage.getItem(name);
+        }
+
+        // Initialize state on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            loadCredentialsFromCookies();
+            checkModelStatus();
+        });
+
+        function loadCredentialsFromCookies() {
+            const cEbayClient = getCookie('ebay_client_id');
+            const cEbayCert = getCookie('ebay_cert_id');
+            const cAliKey = getCookie('ali_key');
+            const cAliSecret = getCookie('ali_secret');
+            const cAliToken = getCookie('ali_token');
+
+            if (cEbayClient) document.getElementById('cfg-ebay-client').value = cEbayClient;
+            if (cEbayCert) document.getElementById('cfg-ebay-cert').value = cEbayCert;
+            if (cAliKey) document.getElementById('cfg-ali-key').value = cAliKey;
+            if (cAliSecret) document.getElementById('cfg-ali-secret').value = cAliSecret;
+            if (cAliToken) document.getElementById('cfg-ali-token').value = cAliToken;
+        }
+
+        function getActiveCredentials() {
+            return {
+                ebay_client_id: document.getElementById('cfg-ebay-client').value.trim() || DEFAULTS.ebay_client_id,
+                ebay_cert_id: document.getElementById('cfg-ebay-cert').value.trim() || DEFAULTS.ebay_cert_id,
+                ali_key: document.getElementById('cfg-ali-key').value.trim() || DEFAULTS.ali_key,
+                ali_secret: document.getElementById('cfg-ali-secret').value.trim() || DEFAULTS.ali_secret,
+                ali_token: document.getElementById('cfg-ali-token').value.trim() || DEFAULTS.ali_token
+            };
+        }
+
+        function saveCredentials() {
+            const creds = getActiveCredentials();
+            setCookie('ebay_client_id', creds.ebay_client_id);
+            setCookie('ebay_cert_id', creds.ebay_cert_id);
+            setCookie('ali_key', creds.ali_key);
+            setCookie('ali_secret', creds.ali_secret);
+            setCookie('ali_token', creds.ali_token);
+
+            showToast('Credentials Saved', 'Your API tokens and secrets have been stored in cookies and localStorage.', 'success');
+            closeSettingsModal();
+        }
+
+        function resetDefaultCredentials() {
+            document.getElementById('cfg-ebay-client').value = DEFAULTS.ebay_client_id;
+            document.getElementById('cfg-ebay-cert').value = DEFAULTS.ebay_cert_id;
+            document.getElementById('cfg-ali-key').value = DEFAULTS.ali_key;
+            document.getElementById('cfg-ali-secret').value = DEFAULTS.ali_secret;
+            document.getElementById('cfg-ali-token').value = DEFAULTS.ali_token;
+            saveCredentials();
+        }
+
+        function toggleVis(id) {
+            const el = document.getElementById(id);
+            el.type = el.type === 'password' ? 'text' : 'password';
+        }
+
+        // Toasts
+        function showToast(title, msg, type = 'info', actionBtn = null) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+
+            let icon = 'ℹ️';
+            if (type === 'danger') icon = '⚠️';
+            if (type === 'warning') icon = '⚡';
+            if (type === 'success') icon = '✅';
+
+            let actionHtml = '';
+            if (actionBtn) {
+                actionHtml = `<div class="toast-action"><button class="btn btn-sm btn-outline" onclick="${actionBtn.onClick}">${actionBtn.label}</button></div>`;
+            }
+
+            toast.innerHTML = `
+                <div class="toast-icon">${icon}</div>
+                <div class="toast-body">
+                    <div class="toast-title">${escapeHtml(title)}</div>
+                    <div class="toast-msg">${escapeHtml(msg)}</div>
+                    ${actionHtml}
+                </div>
+                <button class="toast-close" onclick="this.parentElement.remove()">✕</button>
+            `;
+
+            container.appendChild(toast);
+
+            // Auto dismiss non-error toasts after 6s
+            if (type !== 'danger') {
+                setTimeout(() => {
+                    if (toast.parentElement) toast.remove();
+                }, 6000);
+            }
+        }
+
+        // Test Credentials
+        async function testEbay() {
+            const creds = getActiveCredentials();
+            showToast('Testing eBay', 'Verifying OAuth client credentials...', 'info');
+            try {
+                const res = await fetch('/ebay-research/api/test/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        service: 'ebay',
+                        ebay_client_id: creds.ebay_client_id,
+                        ebay_cert_id: creds.ebay_cert_id
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('eBay Connected!', data.message, 'success');
+                } else {
+                    showToast('eBay Auth Failed', data.message, 'danger', {
+                        label: 'Check Cert ID',
+                        onClick: 'document.getElementById("cfg-ebay-cert").focus()'
+                    });
+                }
+            } catch (e) {
+                showToast('Network Error', e.message, 'danger');
+            }
+        }
+
+        async function testAliExpress() {
+            const creds = getActiveCredentials();
+            showToast('Testing AliExpress', 'Calling Dropshipping API test feed...', 'info');
+            try {
+                const res = await fetch('/ebay-research/api/test/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        service: 'aliexpress',
+                        ali_key: creds.ali_key,
+                        ali_secret: creds.ali_secret,
+                        ali_token: creds.ali_token
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('AliExpress Connected!', data.message, 'success');
+                } else {
+                    showToast('AliExpress Error', data.message, 'danger', {
+                        label: 'Update Token',
+                        onClick: 'document.getElementById("cfg-ali-token").focus()'
+                    });
+                }
+            } catch (e) {
+                showToast('Network Error', e.message, 'danger');
+            }
+        }
+
+        async function checkModelStatus() {
+            try {
+                const res = await fetch('/ebay-research/api/status/');
+                const data = await res.json();
+                const dot = document.getElementById('model-dot');
+                const lbl = document.getElementById('model-label');
+                if (data.loaded) {
+                    dot.className = 'status-dot';
+                    lbl.innerText = `CLIP AI: Ready (${data.device})`;
+                } else {
+                    dot.className = 'status-dot warning';
+                    lbl.innerText = 'CLIP AI: Text Fallback';
+                }
+            } catch (e) {
+                // Ignore
+            }
+        }
+
+        // Country Selection
+        function selectCountry(c, btn) {
+            currentCountry = c;
+            document.querySelectorAll('.country-tab').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            onLinksInput();
+        }
+
+        // Links Input
+        function onLinksInput() {
+            const val = document.getElementById('links-textarea').value;
+            const matches = val.match(/\b\d{12}\b/g) || [];
+            const unique = new Set(matches);
+            document.getElementById('detected-counter').innerText = `${unique.size} Unique Item IDs Detected (${matches.length} Total)`;
+        }
+
+        function pasteClipboard() {
+            navigator.clipboard.readText().then(text => {
+                const ta = document.getElementById('links-textarea');
+                ta.value = ta.value ? (ta.value + '\n' + text) : text;
+                onLinksInput();
+                showToast('Pasted', 'Links pasted from clipboard.', 'info');
+            }).catch(() => {
+                showToast('Clipboard Notice', 'Please use Ctrl+V to paste into the textarea.', 'warning');
+            });
+        }
+
+        function loadSampleLinks() {
+            document.getElementById('links-textarea').value = SAMPLE_LINKS;
+            onLinksInput();
+            showToast('Sample Loaded', 'Loaded sample links for demonstration.', 'info');
+        }
+
+        function clearLinks() {
+            document.getElementById('links-textarea').value = '';
+            onLinksInput();
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('links-textarea').value = e.target.result;
+                onLinksInput();
+                showToast('File Loaded', `Loaded file "${file.name}"`, 'success');
+            };
+            reader.readAsText(file);
+        }
+
+        // Modal Functions
+        function openSettingsModal() {
+            document.getElementById('settings-modal').style.display = 'flex';
+        }
+        function closeSettingsModal() {
+            document.getElementById('settings-modal').style.display = 'none';
+        }
+
+        function openImageModal(el) {
+            document.getElementById('modal-img').src = el.dataset.large || el.src;
+            document.getElementById('modal-title').innerText = el.dataset.title || '';
+            document.getElementById('image-modal').style.display = 'flex';
+        }
+        function closeImageModal() {
+            document.getElementById('image-modal').style.display = 'none';
+        }
+
+        // Log entry helper
+        function appendLog(msg) {
+            const box = document.getElementById('log-box');
+            const el = document.createElement('div');
+            el.className = 'log-entry';
+            const timeStr = new Date().toLocaleTimeString();
+            el.innerText = `[${timeStr}] ${msg}`;
+            box.appendChild(el);
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function updateProgress(pct, statusText) {
+            document.getElementById('progress-pct').innerText = `${pct}%`;
+            document.getElementById('progress-fill').style.width = `${pct}%`;
+            document.getElementById('progress-status-text').innerText = statusText;
+        }
+
+        // Run Research Routine
+        async function startResearch() {
+            const links = document.getElementById('links-textarea').value.trim();
+            if (!links) {
+                showToast('Input Required', 'Please paste at least one eBay link or 12-digit item ID.', 'warning');
+                return;
+            }
+
+            const creds = getActiveCredentials();
+            const maxItems = document.getElementById('max-items-select').value;
+            const runBtn = document.getElementById('run-btn');
+
+            runBtn.disabled = true;
+            runBtn.innerHTML = '<span>⏳</span> Searching...';
+
+            const pBox = document.getElementById('progress-box');
+            pBox.style.display = 'block';
+            document.getElementById('log-box').innerHTML = '';
+            updateProgress(10, 'Initializing eBay & AliExpress APIs...');
+            appendLog(`Starting research on ${currentCountry} marketplace...`);
+
+            try {
+                updateProgress(30, 'Sending links to processing engine...');
+                const resp = await fetch('/ebay-research/api/run/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        links: links,
+                        country: currentCountry,
+                        ebay_client_id: creds.ebay_client_id,
+                        ebay_cert_id: creds.ebay_cert_id,
+                        ali_key: creds.ali_key,
+                        ali_secret: creds.ali_secret,
+                        ali_token: creds.ali_token,
+                        max_items: maxItems === 'all' ? null : parseInt(maxItems)
+                    })
+                });
+
+                const data = await resp.json();
+
+                if (data.logs && data.logs.length) {
+                    data.logs.forEach(l => appendLog(l));
+                }
+
+                if (!resp.ok || !data.success) {
+                    updateProgress(100, 'Process ended with notice.');
+                    const errMsg = data.message || 'Error occurred during research execution.';
+                    
+                    // Specific toast diagnostics for expired tokens
+                    if (errMsg.toLowerCase().includes('token') || errMsg.toLowerCase().includes('unauthorized')) {
+                        showToast('Credential Error', errMsg, 'danger', {
+                            label: 'Change Tokens Now',
+                            onClick: 'openSettingsModal()'
+                        });
+                    } else if (errMsg.toLowerCase().includes('limit') || errMsg.toLowerCase().includes('frequency')) {
+                        showToast('Rate Limit Reached', errMsg, 'warning');
+                    } else {
+                        showToast('Research Notice', errMsg, 'danger');
+                    }
+
+                    // Display errors if any
+                    if (data.errors && data.errors.length) {
+                        data.errors.forEach(err => {
+                            showToast('API Diagnostic', err, 'warning', {
+                                label: 'Edit Keys',
+                                onClick: 'openSettingsModal()'
+                            });
+                        });
+                    }
+                    return;
+                }
+
+                updateProgress(100, 'Complete! Rendering interactive dashboard...');
+                latestResults = data.results || [];
+                latestSummary = data.summary || {};
+
+                renderDashboard(latestResults, latestSummary);
+
+                // Show notice if any API errors occurred in sub-calls
+                if (data.errors && data.errors.length) {
+                    data.errors.forEach(err => {
+                        showToast('API Notice', err, 'warning', {
+                            label: 'Check Keys',
+                            onClick: 'openSettingsModal()'
+                        });
+                    });
+                }
+
+                showToast('Research Complete!', `Found matches for ${latestResults.length} items in ${latestSummary.elapsed_seconds}s.`, 'success');
+
+            } catch (err) {
+                appendLog(`Error: ${err.message}`);
+                showToast('Execution Error', err.message, 'danger');
+            } finally {
+                runBtn.disabled = false;
+                runBtn.innerHTML = '<span>🚀</span> Run Turbo Visual Search';
+            }
+        }
+
+        // Render Dashboard
+        function renderDashboard(results, summary) {
+            document.getElementById('results-section').style.display = 'block';
+
+            // KPI stats
+            document.getElementById('kpi-total').innerText = results.length;
+            document.getElementById('kpi-links-count').innerText = `From ${summary.total_links || results.length} links`;
+            document.getElementById('kpi-matches-70').innerText = summary.matches_70_plus || 0;
+            const currSymbol = results.length > 0 ? results[0].curr : '$';
+            document.getElementById('kpi-avg-spread').innerText = `${currSymbol}${(summary.avg_spread || 0).toFixed(2)}`;
+            document.getElementById('kpi-hot-sellers').innerText = summary.hot_items || 0;
+            document.getElementById('kpi-elapsed').innerText = `${summary.elapsed_seconds || 0}s`;
+            document.getElementById('kpi-target-mkt').innerText = `Market: ${summary.country || currentCountry}`;
+
+            // Populate Table
+            filterAndSortTable();
+
+            // Smooth scroll down to results
+            document.getElementById('results-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Filter and Sort Table
+        function filterAndSortTable() {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+
+            const sortMode = document.getElementById('sort-select').value;
+            const includeKeyword = document.getElementById('include-keyword').value.toLowerCase().trim();
+            const excludeKeywords = document.getElementById('exclude-keyword').value.toLowerCase().split(',').map(s => s.trim()).filter(Boolean);
+            const presetFilter = document.getElementById('filter-preset').value;
+
+            // Make a clone to sort
+            let rowsData = [...latestResults];
+
+            // Sorting
+            rowsData.sort((a, b) => {
+                if (sortMode === 'listed_desc') return (b.ts || 0) - (a.ts || 0);
+                if (sortMode === 'score_desc') {
+                    const scA = a.top3 && a.top3.length ? a.top3[0].score : 0;
+                    const scB = b.top3 && b.top3.length ? b.top3[0].score : 0;
+                    return scB - scA;
+                }
+                if (sortMode === 'sold_desc') return (b.sold || 0) - (a.sold || 0);
+                if (sortMode === 'spread_desc') return (b.spread || -9999) - (a.spread || -9999);
+                if (sortMode === 'price_asc') return (a.price || 0) - (b.price || 0);
+                if (sortMode === 'price_desc') return (b.price || 0) - (a.price || 0);
+                return 0;
+            });
+
+            let visibleCount = 0;
+
+            rowsData.forEach((it, idx) => {
+                const titleLower = (it.title || '').toLowerCase();
+                const sellerLower = (it.seller || '').toLowerCase();
+                const textContent = `${titleLower} ${sellerLower}`;
+
+                // Filter keyword inclusion
+                if (includeKeyword && !textContent.includes(includeKeyword)) return;
+
+                // Filter keyword exclusion
+                if (excludeKeywords.some(w => textContent.includes(w))) return;
+
+                const top3 = it.top3 || [];
+                const topMatch = top3.length > 0 ? top3[0] : null;
+                const score = topMatch ? topMatch.score : 0;
+                const hasAli = top3.length > 0 ? 1 : 0;
+                const soldNum = it.sold !== null && it.sold !== undefined ? it.sold : -1;
+                const spread = it.spread !== null && it.spread !== undefined ? it.spread : -999;
+
+                // Preset filter
+                if (presetFilter === 'ali_70' && (!topMatch || score < 70.0)) return;
+                if (presetFilter === 'sold_only' && soldNum < 0) return;
+                if (presetFilter === 'profitable_only' && spread <= 0) return;
+
+                visibleCount++;
+
+                // Build Row HTML
+                const tr = document.createElement('tr');
+                tr.dataset.rowId = idx;
+                tr.dataset.score = score;
+                tr.dataset.price = it.price;
+                tr.dataset.sold = soldNum;
+                tr.dataset.ts = it.ts;
+
+                const cur = it.curr || '$';
+                const st = escapeHtml(it.title);
+                const ss = escapeHtml(it.seller);
+
+                const ebayImgHtml = it.thumb ? 
+                    `<img src="${it.thumb}" data-large="${it.large || it.thumb}" data-title="eBay: ${st}" class="thumb eb" onclick="openImageModal(this)">` :
+                    `<div class="noimg">No Img</div>`;
+
+                let soldBadgeHtml = '';
+                if (soldNum >= 0) {
+                    const sCls = soldNum >= 5 ? 'hot' : (soldNum > 0 ? 'some' : 'zero');
+                    soldBadgeHtml = `<span class="sbadge ${sCls}">${soldNum} Sold</span>`;
+                }
+
+                let aliImgHtml = `<div class="noimg">No Match</div>`;
+                let aliPriceHtml = '-';
+                let spreadHtml = '-';
+                let supplierHtml = `<span style="color:#64748b;font-size:11px">No supplier found</span>`;
+
+                if (topMatch) {
+                    const at = escapeHtml(topMatch.title);
+                    const scCls = score >= 80 ? 'mhigh' : (score >= 70 ? 'mmid' : 'mlow');
+                    aliImgHtml = `<img id="aimg-${idx}" src="${topMatch.img}" data-large="${topMatch.img}" data-title="Ali (${score}% Match): ${at}" class="thumb al" onclick="openImageModal(this)">`;
+                    
+                    const wTag = topMatch.welcome_adj ? ' <span title="Adjusted from Welcome Deal" style="font-size:10px;color:#94a3b8">*</span>' : '';
+                    aliPriceHtml = `<span id="apr-${idx}" class="aprice">${cur}${topMatch.price.toFixed(2)}${wTag}</span>`;
+
+                    const sp = it.price - topMatch.price;
+                    const spCls = sp > 0 ? 'ppos' : 'pneg';
+                    spreadHtml = `<span id="asp-${idx}" class="${spCls}">${cur}${sp >= 0 ? '+' : ''}${sp.toFixed(2)}</span>`;
+
+                    const trBadge = topMatch.trusted ? `<span class="tbadge">★ Choice/Top</span>` : '';
+                    
+                    let tabBtns = '';
+                    if (top3.length > 1) {
+                        tabBtns = `<div class="m-tabs" data-curr="${cur}" data-ebay="${it.price}">`;
+                        top3.forEach((m, m_i) => {
+                            const act = m_i === 0 ? 'active' : '';
+                            tabBtns += `<button class="mtab ${act}" onclick="switchMatch(${idx}, ${m_i}, this)">#${m_i + 1}</button>`;
+                        });
+                        tabBtns += `</div>`;
+                    }
+
+                    supplierHtml = `
+                        <a id="aurl-${idx}" href="${topMatch.url}" target="_blank" class="abtn">Supplier ↗</a>
+                        <div id="ameta-${idx}" class="meta">
+                            ${trBadge}<span class="mbadge ${scCls}">${score}%</span> | Sold: ${topMatch.vol}
+                        </div>
+                        ${tabBtns}
+                    `;
+                }
+
+                tr.innerHTML = `
+                    <td class="c rnum" style="color:#94a3b8;font-weight:600">${visibleCount}</td>
+                    <td class="c">${ebayImgHtml}</td>
+                    <td class="c">${aliImgHtml}</td>
+                    <td class="c"><span class="badge">${it.age}</span></td>
+                    <td class="c">${soldBadgeHtml}</td>
+                    <td class="c b">${cur}${it.price.toFixed(2)}</td>
+                    <td class="c b">${aliPriceHtml}</td>
+                    <td class="c">${spreadHtml}</td>
+                    <td>
+                        <a href="${it.link}" target="_blank" class="ilink">${st}</a>
+                        <div class="meta">
+                            ID: <b>${it.id}</b> &bull; Country: <b>${it.country || 'US'}</b> &bull; Seller: <b>${ss}</b> (${it.loc})
+                        </div>
+                    </td>
+                    <td class="c">${supplierHtml}</td>
+                `;
+
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('visible-count').innerText = visibleCount;
+        }
+
+        // Switch Match Tabs (#1, #2, #3)
+        function switchMatch(rowIdx, matchIdx, btn) {
+            const item = latestResults[rowIdx];
+            if (!item || !item.top3 || !item.top3[matchIdx]) return;
+
+            const m = item.top3[matchIdx];
+            const cur = item.curr || '$';
+
+            // Update Image
+            const imgEl = document.getElementById(`aimg-${rowIdx}`);
+            if (imgEl) {
+                imgEl.src = m.img;
+                imgEl.dataset.large = m.img;
+                imgEl.dataset.title = `Ali (${m.score}% Match): ${m.title}`;
+            }
+
+            // Update Price
+            const prEl = document.getElementById(`apr-${rowIdx}`);
+            if (prEl) {
+                const wTag = m.welcome_adj ? ' <span title="Adjusted from Welcome Deal" style="font-size:10px;color:#94a3b8">*</span>' : '';
+                prEl.innerHTML = `${cur}${m.price.toFixed(2)}${wTag}`;
+            }
+
+            // Update Spread
+            const spEl = document.getElementById(`asp-${rowIdx}`);
+            if (spEl) {
+                const sp = item.price - m.price;
+                spEl.innerText = `${cur}${sp >= 0 ? '+' : ''}${sp.toFixed(2)}`;
+                spEl.className = sp > 0 ? 'ppos' : 'pneg';
+            }
+
+            // Update Supplier Link & Meta
+            const urlEl = document.getElementById(`aurl-${rowIdx}`);
+            if (urlEl) urlEl.href = m.url;
+
+            const metaEl = document.getElementById(`ameta-${rowIdx}`);
+            if (metaEl) {
+                const scCls = m.score >= 80 ? 'mhigh' : (m.score >= 70 ? 'mmid' : 'mlow');
+                const trBadge = m.trusted ? '<span class="tbadge">★ Choice/Top</span>' : '';
+                metaEl.innerHTML = `${trBadge}<span class="mbadge ${scCls}">${m.score}%</span> | Sold: ${m.vol}`;
+            }
+
+            // Update Active Tab Style
+            const wrap = btn.parentElement;
+            wrap.querySelectorAll('.mtab').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        // Export Function
+        async function exportData(format) {
+            if (!latestResults || !latestResults.length) {
+                showToast('Export Notice', 'No research data to export yet.', 'warning');
+                return;
+            }
+
+            showToast('Generating Export', `Preparing ${format.toUpperCase()} export...`, 'info');
+
+            try {
+                const resp = await fetch('/ebay-research/api/export/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        format: format,
+                        results: latestResults,
+                        summary: latestSummary
+                    })
+                });
+
+                if (!resp.ok) throw new Error('Export generation failed.');
+
+                const blob = await resp.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `ebay_research_${currentCountry.toLowerCase()}_${Date.now()}.${format === 'html' ? 'html' : (format === 'csv' ? 'csv' : 'json')}`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+                showToast('Download Ready', `Exported to ${format.toUpperCase()} successfully!`, 'success');
+            } catch (e) {
+                showToast('Export Failed', e.message, 'danger');
+            }
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.toString()
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
+
