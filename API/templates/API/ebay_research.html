@@ -1081,15 +1081,31 @@
                     <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted)">
                         <span>Limit:</span>
                         <select id="max-items-select" class="select-input">
+                            <option value="all" selected>All Items</option>
                             <option value="20">20 Items</option>
                             <option value="50">50 Items</option>
                             <option value="100">100 Items</option>
-                            <option value="all">All Items</option>
+                            <option value="200">200 Items</option>
+                        </select>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted)">
+                        <span>Batch:</span>
+                        <select id="batch-size-select" class="select-input" title="Chunk size processed per serverless batch (prevents Vercel 504 timeouts)">
+                            <option value="15" selected>15 (Recommended)</option>
+                            <option value="10">10 (Fastest)</option>
+                            <option value="20">20 (Larger)</option>
                         </select>
                     </div>
 
                     <button class="btn btn-accent btn-lg" id="run-btn" onclick="startResearch()">
                         <span>🚀</span> Run Turbo Visual Search
+                    </button>
+                    <button class="btn btn-secondary btn-lg" id="pause-btn" style="display:none" onclick="togglePauseResearch()">
+                        <span>⏸️</span> Pause
+                    </button>
+                    <button class="btn btn-outline btn-lg" id="stop-btn" style="display:none; border-color:#ef4444; color:#fca5a5" onclick="stopResearch()">
+                        <span>⏹️</span> Stop
                     </button>
                 </div>
             </div>
@@ -1101,6 +1117,7 @@
                 <div class="progress-title">
                     <span class="status-dot"></span>
                     <span id="progress-status-text">Processing items...</span>
+                    <span id="progress-batch-badge" class="badge" style="display:none; font-size:11px; margin-left:6px; background:#1e3a8a">Batch 1/1</span>
                 </div>
                 <div class="progress-pct" id="progress-pct">0%</div>
             </div>
@@ -1608,107 +1625,280 @@ https://www.ebay.co.uk/itm/196612847952 0 sold`;
             document.getElementById('progress-status-text').innerText = statusText;
         }
 
-        // Run Research Routine
+        // Research State & Control Flags
+        let isResearchRunning = false;
+        let isResearchPaused = false;
+        let shouldStopResearch = false;
+
+        function togglePauseResearch() {
+            if (!isResearchRunning) return;
+            isResearchPaused = !isResearchPaused;
+            const pauseBtn = document.getElementById('pause-btn');
+            if (isResearchPaused) {
+                pauseBtn.innerHTML = '<span>▶️</span> Resume';
+                pauseBtn.classList.remove('btn-secondary');
+                pauseBtn.classList.add('btn-accent');
+                appendLog('Research paused. Click Resume to process remaining batches.');
+                showToast('Paused', 'Research paused. You can resume at any time.', 'info');
+            } else {
+                pauseBtn.innerHTML = '<span>⏸️</span> Pause';
+                pauseBtn.classList.remove('btn-accent');
+                pauseBtn.classList.add('btn-secondary');
+                appendLog('Research resumed.');
+            }
+        }
+
+        function stopResearch() {
+            if (!isResearchRunning) return;
+            shouldStopResearch = true;
+            appendLog('Stopping research... All currently processed items will be kept.');
+            showToast('Stopping', 'Stopping research. Processed items are preserved.', 'warning');
+        }
+
+        // Parse unique 12-digit item IDs while preserving original line context (sold count, domain)
+        function extractInputLines(rawText) {
+            const rawLines = rawText.split('\n');
+            const validLines = [];
+            const seenIds = new Set();
+
+            for (let line of rawLines) {
+                const trimmed = line.trim();
+                if (!trimmed) continue;
+                const match = trimmed.match(/\b(\d{12})\b/);
+                if (match) {
+                    const id = match[1];
+                    if (!seenIds.has(id)) {
+                        seenIds.add(id);
+                        validLines.push(trimmed);
+                    }
+                }
+            }
+
+            // Fallback for space/comma separated strings without newlines
+            if (validLines.length === 0) {
+                const allMatches = rawText.match(/\b\d{12}\b/g) || [];
+                for (let id of allMatches) {
+                    if (!seenIds.has(id)) {
+                        seenIds.add(id);
+                        validLines.push(id);
+                    }
+                }
+            }
+            return validLines;
+        }
+
+        // Run Research Routine with Client-Side Chunking
         async function startResearch() {
-            const links = document.getElementById('links-textarea').value.trim();
-            if (!links) {
+            const rawText = document.getElementById('links-textarea').value.trim();
+            if (!rawText) {
                 showToast('Input Required', 'Please paste at least one eBay link or 12-digit item ID.', 'warning');
                 return;
             }
 
+            let validLines = extractInputLines(rawText);
+            if (!validLines.length) {
+                showToast('No IDs Found', 'Could not detect any 12-digit eBay item IDs. Please check your links.', 'warning');
+                return;
+            }
+
+            const maxItemsVal = document.getElementById('max-items-select').value;
+            if (maxItemsVal !== 'all') {
+                const limitNum = parseInt(maxItemsVal);
+                if (validLines.length > limitNum) {
+                    validLines = validLines.slice(0, limitNum);
+                }
+            }
+
+            const batchSizeSelect = document.getElementById('batch-size-select');
+            const batchSize = parseInt(batchSizeSelect ? batchSizeSelect.value : '15') || 15;
+
+            // Partition into batches to prevent Vercel 504 serverless timeouts
+            const batches = [];
+            for (let i = 0; i < validLines.length; i += batchSize) {
+                batches.push(validLines.slice(i, i + batchSize));
+            }
+
             const creds = getActiveCredentials();
-            const maxItems = document.getElementById('max-items-select').value;
             const runBtn = document.getElementById('run-btn');
+            const pauseBtn = document.getElementById('pause-btn');
+            const stopBtn = document.getElementById('stop-btn');
+            const badge = document.getElementById('progress-batch-badge');
+
+            isResearchRunning = true;
+            isResearchPaused = false;
+            shouldStopResearch = false;
 
             runBtn.disabled = true;
-            runBtn.innerHTML = '<span>⏳</span> Searching...';
+            runBtn.style.display = 'none';
+            pauseBtn.style.display = 'inline-flex';
+            pauseBtn.innerHTML = '<span>⏸️</span> Pause';
+            pauseBtn.classList.remove('btn-accent');
+            pauseBtn.classList.add('btn-secondary');
+            stopBtn.style.display = 'inline-flex';
 
             const pBox = document.getElementById('progress-box');
             pBox.style.display = 'block';
             document.getElementById('log-box').innerHTML = '';
-            updateProgress(10, 'Initializing eBay & AliExpress APIs...');
-            appendLog(`Starting research on ${currentCountry} marketplace...`);
+            latestResults = [];
+            latestSummary = {};
 
-            try {
-                updateProgress(30, 'Sending links to processing engine...');
-                const resp = await fetch('/ebay-research/api/run/', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        links: links,
-                        country: currentCountry,
-                        ebay_client_id: creds.ebay_client_id,
-                        ebay_cert_id: creds.ebay_cert_id,
-                        ali_key: creds.ali_key,
-                        ali_secret: creds.ali_secret,
-                        ali_token: creds.ali_token,
-                        max_items: maxItems === 'all' ? null : parseInt(maxItems)
-                    })
-                });
+            if (badge) {
+                badge.style.display = 'inline-block';
+                badge.innerText = `Batch 1/${batches.length}`;
+            }
 
-                const data = await resp.json();
+            updateProgress(5, `Starting research across ${validLines.length} items (${batches.length} batches)...`);
+            appendLog(`Starting research on ${currentCountry} marketplace... ${validLines.length} unique items across ${batches.length} batch(es) (Batch size: ${batchSize}).`);
 
-                if (data.logs && data.logs.length) {
+            const startTime = Date.now();
+            let hasCriticalAuthError = false;
+
+            for (let b = 0; b < batches.length; b++) {
+                if (shouldStopResearch) {
+                    appendLog(`Research stopped by user. Kept ${latestResults.length} processed items.`);
+                    break;
+                }
+
+                while (isResearchPaused && !shouldStopResearch) {
+                    await new Promise(r => setTimeout(r, 250));
+                }
+                if (shouldStopResearch) break;
+
+                const currentBatchNum = b + 1;
+                const totalBatches = batches.length;
+                const batchLines = batches[b];
+
+                const pct = Math.max(5, Math.round((b / totalBatches) * 100));
+                updateProgress(pct, `Processing Batch ${currentBatchNum} of ${totalBatches} (${batchLines.length} items)...`);
+                if (badge) badge.innerText = `Batch ${currentBatchNum}/${totalBatches}`;
+
+                appendLog(`[Batch ${currentBatchNum}/${totalBatches}] Processing ${batchLines.length} items...`);
+
+                let data = null;
+                let attempt = 0;
+                const maxAttempts = 2;
+
+                while (attempt < maxAttempts && !data) {
+                    attempt++;
+                    try {
+                        const resp = await fetch('/ebay-research/api/run/', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                links: batchLines.join('\n'),
+                                country: currentCountry,
+                                ebay_client_id: creds.ebay_client_id,
+                                ebay_cert_id: creds.ebay_cert_id,
+                                ali_key: creds.ali_key,
+                                ali_secret: creds.ali_secret,
+                                ali_token: creds.ali_token,
+                                batch_info: { batch: currentBatchNum, total_batches: totalBatches }
+                            })
+                        });
+
+                        const text = await resp.text();
+                        try {
+                            data = JSON.parse(text);
+                        } catch (parseErr) {
+                            if (resp.status === 504 || text.includes('504') || text.includes('FUNCTION_INVOCATION_TIMEOUT')) {
+                                if (attempt < maxAttempts) {
+                                    appendLog(`[Batch ${currentBatchNum}] Serverless timeout (504). Retrying once in 2s...`);
+                                    await new Promise(r => setTimeout(r, 2000));
+                                    continue;
+                                }
+                                throw new Error(`Batch ${currentBatchNum} timed out on Vercel (504). Try selecting Batch Size: 10 in the dropdown.`);
+                            }
+                            throw new Error(`Server returned HTTP ${resp.status}: ${text.slice(0, 100)}...`);
+                        }
+
+                        if (!resp.ok || !data.success) {
+                            const errMsg = (data && data.message) || `Error in batch ${currentBatchNum}`;
+                            appendLog(`[Batch ${currentBatchNum} Warning] ${errMsg}`);
+
+                            if (errMsg.toLowerCase().includes('token') || errMsg.toLowerCase().includes('unauthorized') || errMsg.toLowerCase().includes('cert_id')) {
+                                showToast('Credential Error', errMsg, 'danger', {
+                                    label: 'Change Tokens Now',
+                                    onClick: 'openSettingsModal()'
+                                });
+                                hasCriticalAuthError = true;
+                                break;
+                            } else {
+                                showToast(`Batch ${currentBatchNum} Notice`, errMsg, 'warning');
+                            }
+                        }
+
+                    } catch (fetchErr) {
+                        if (attempt < maxAttempts && (fetchErr.message.includes('504') || fetchErr.message.includes('Failed to fetch'))) {
+                            appendLog(`[Batch ${currentBatchNum}] Network glitch / timeout. Retrying in 2s...`);
+                            await new Promise(r => setTimeout(r, 2000));
+                            continue;
+                        }
+                        appendLog(`[Batch ${currentBatchNum} Error] ${fetchErr.message}`);
+                        showToast(`Batch ${currentBatchNum} Failed`, fetchErr.message, 'danger');
+                        break;
+                    }
+                }
+
+                if (hasCriticalAuthError) {
+                    break;
+                }
+
+                // Process returned items
+                const batchItems = (data && (data.results || data.items)) || [];
+                if (batchItems.length) {
+                    latestResults.push(...batchItems);
+                }
+                if (data && data.logs && data.logs.length) {
                     data.logs.forEach(l => appendLog(l));
                 }
 
-                if (!resp.ok || !data.success) {
-                    updateProgress(100, 'Process ended with notice.');
-                    const errMsg = data.message || 'Error occurred during research execution.';
-                    
-                    // Specific toast diagnostics for expired tokens
-                    if (errMsg.toLowerCase().includes('token') || errMsg.toLowerCase().includes('unauthorized')) {
-                        showToast('Credential Error', errMsg, 'danger', {
-                            label: 'Change Tokens Now',
-                            onClick: 'openSettingsModal()'
-                        });
-                    } else if (errMsg.toLowerCase().includes('limit') || errMsg.toLowerCase().includes('frequency')) {
-                        showToast('Rate Limit Reached', errMsg, 'warning');
-                    } else {
-                        showToast('Research Notice', errMsg, 'danger');
-                    }
+                // Calculate cumulative summary
+                const elapsedSec = ((Date.now() - startTime) / 1000).toFixed(1);
+                const matches70 = latestResults.filter(r => (r.top3 && r.top3.length && r.top3[0].score >= 70)).length;
+                const hotItems = latestResults.filter(r => (r.sold && r.sold >= 5)).length;
+                const spreads = latestResults.map(r => r.spread).filter(v => v !== null && !isNaN(v));
+                const avgSpread = spreads.length ? (spreads.reduce((a, b) => a + b, 0) / spreads.length) : 0;
 
-                    // Display errors if any
-                    if (data.errors && data.errors.length) {
-                        data.errors.forEach(err => {
-                            showToast('API Diagnostic', err, 'warning', {
-                                label: 'Edit Keys',
-                                onClick: 'openSettingsModal()'
-                            });
-                        });
-                    }
-                    return;
+                latestSummary = {
+                    total_links: validLines.length,
+                    unique_items: latestResults.length,
+                    loaded_items: latestResults.length,
+                    matches_70_plus: matches70,
+                    avg_spread: avgSpread,
+                    hot_items: hotItems,
+                    elapsed_seconds: elapsedSec,
+                    country: currentCountry
+                };
+
+                // Live stream to dashboard
+                if (latestResults.length > 0) {
+                    renderDashboard(latestResults, latestSummary, b === 0);
                 }
 
-                updateProgress(100, 'Complete! Rendering interactive dashboard...');
-                latestResults = data.results || [];
-                latestSummary = data.summary || {};
-
-                renderDashboard(latestResults, latestSummary);
-
-                // Show notice if any API errors occurred in sub-calls
-                if (data.errors && data.errors.length) {
-                    data.errors.forEach(err => {
-                        showToast('API Notice', err, 'warning', {
-                            label: 'Check Keys',
-                            onClick: 'openSettingsModal()'
-                        });
-                    });
+                // Small pause between batches to avoid API frequency thresholds
+                if (b < batches.length - 1 && !shouldStopResearch) {
+                    await new Promise(r => setTimeout(r, 350));
                 }
+            }
 
-                showToast('Research Complete!', `Found matches for ${latestResults.length} items in ${latestSummary.elapsed_seconds}s.`, 'success');
+            // Cleanup & wrap up
+            isResearchRunning = false;
+            runBtn.disabled = false;
+            runBtn.style.display = 'inline-flex';
+            pauseBtn.style.display = 'none';
+            stopBtn.style.display = 'none';
 
-            } catch (err) {
-                appendLog(`Error: ${err.message}`);
-                showToast('Execution Error', err.message, 'danger');
-            } finally {
-                runBtn.disabled = false;
-                runBtn.innerHTML = '<span>🚀</span> Run Turbo Visual Search';
+            if (latestResults.length > 0) {
+                updateProgress(100, `Complete! Processed ${latestResults.length} items.`);
+                renderDashboard(latestResults, latestSummary, false);
+                showToast('Research Complete!', `Successfully processed ${latestResults.length} items with ${latestSummary.matches_70_plus} visual matches!`, 'success');
+            } else {
+                updateProgress(100, 'Process ended.');
             }
         }
 
         // Render Dashboard
-        function renderDashboard(results, summary) {
+        function renderDashboard(results, summary, shouldScroll = true) {
             document.getElementById('results-section').style.display = 'block';
 
             // KPI stats
@@ -1724,8 +1914,10 @@ https://www.ebay.co.uk/itm/196612847952 0 sold`;
             // Populate Table
             filterAndSortTable();
 
-            // Smooth scroll down to results
-            document.getElementById('results-section').scrollIntoView({ behavior: 'smooth' });
+            // Smooth scroll down to results if requested
+            if (shouldScroll) {
+                document.getElementById('results-section').scrollIntoView({ behavior: 'smooth' });
+            }
         }
 
         // Filter and Sort Table
@@ -1813,14 +2005,14 @@ https://www.ebay.co.uk/itm/196612847952 0 sold`;
                 if (topMatch) {
                     const at = escapeHtml(topMatch.title);
                     const scCls = score >= 80 ? 'mhigh' : (score >= 70 ? 'mmid' : 'mlow');
-                    aliImgHtml = `<img id="aimg-${idx}" src="${topMatch.img}" data-large="${topMatch.img}" data-title="Ali (${score}% Match): ${at}" class="thumb al" onclick="openImageModal(this)">`;
+                    aliImgHtml = `<img id="aimg-${it.id}" src="${topMatch.img}" data-large="${topMatch.img}" data-title="Ali (${score}% Match): ${at}" class="thumb al" onclick="openImageModal(this)">`;
                     
                     const wTag = topMatch.welcome_adj ? ' <span title="Adjusted from Welcome Deal" style="font-size:10px;color:#94a3b8">*</span>' : '';
-                    aliPriceHtml = `<span id="apr-${idx}" class="aprice">${cur}${topMatch.price.toFixed(2)}${wTag}</span>`;
+                    aliPriceHtml = `<span id="apr-${it.id}" class="aprice">${cur}${topMatch.price.toFixed(2)}${wTag}</span>`;
 
                     const sp = it.price - topMatch.price;
                     const spCls = sp > 0 ? 'ppos' : 'pneg';
-                    spreadHtml = `<span id="asp-${idx}" class="${spCls}">${cur}${sp >= 0 ? '+' : ''}${sp.toFixed(2)}</span>`;
+                    spreadHtml = `<span id="asp-${it.id}" class="${spCls}">${cur}${sp >= 0 ? '+' : ''}${sp.toFixed(2)}</span>`;
 
                     const trBadge = topMatch.trusted ? `<span class="tbadge">★ Choice/Top</span>` : '';
                     
@@ -1829,14 +2021,14 @@ https://www.ebay.co.uk/itm/196612847952 0 sold`;
                         tabBtns = `<div class="m-tabs" data-curr="${cur}" data-ebay="${it.price}">`;
                         top3.forEach((m, m_i) => {
                             const act = m_i === 0 ? 'active' : '';
-                            tabBtns += `<button class="mtab ${act}" onclick="switchMatch(${idx}, ${m_i}, this)">#${m_i + 1}</button>`;
+                            tabBtns += `<button class="mtab ${act}" onclick="switchMatch('${it.id}', ${m_i}, this)">#${m_i + 1}</button>`;
                         });
                         tabBtns += `</div>`;
                     }
 
                     supplierHtml = `
-                        <a id="aurl-${idx}" href="${topMatch.url}" target="_blank" class="abtn">Supplier ↗</a>
-                        <div id="ameta-${idx}" class="meta">
+                        <a id="aurl-${it.id}" href="${topMatch.url}" target="_blank" class="abtn">Supplier ↗</a>
+                        <div id="ameta-${it.id}" class="meta">
                             ${trBadge}<span class="mbadge ${scCls}">${score}%</span> | Sold: ${topMatch.vol}
                         </div>
                         ${tabBtns}
@@ -1868,15 +2060,15 @@ https://www.ebay.co.uk/itm/196612847952 0 sold`;
         }
 
         // Switch Match Tabs (#1, #2, #3)
-        function switchMatch(rowIdx, matchIdx, btn) {
-            const item = latestResults[rowIdx];
+        function switchMatch(itemId, matchIdx, btn) {
+            const item = latestResults.find(r => r.id === String(itemId));
             if (!item || !item.top3 || !item.top3[matchIdx]) return;
 
             const m = item.top3[matchIdx];
             const cur = item.curr || '$';
 
             // Update Image
-            const imgEl = document.getElementById(`aimg-${rowIdx}`);
+            const imgEl = document.getElementById(`aimg-${itemId}`);
             if (imgEl) {
                 imgEl.src = m.img;
                 imgEl.dataset.large = m.img;
@@ -1884,14 +2076,14 @@ https://www.ebay.co.uk/itm/196612847952 0 sold`;
             }
 
             // Update Price
-            const prEl = document.getElementById(`apr-${rowIdx}`);
+            const prEl = document.getElementById(`apr-${itemId}`);
             if (prEl) {
                 const wTag = m.welcome_adj ? ' <span title="Adjusted from Welcome Deal" style="font-size:10px;color:#94a3b8">*</span>' : '';
                 prEl.innerHTML = `${cur}${m.price.toFixed(2)}${wTag}`;
             }
 
             // Update Spread
-            const spEl = document.getElementById(`asp-${rowIdx}`);
+            const spEl = document.getElementById(`asp-${itemId}`);
             if (spEl) {
                 const sp = item.price - m.price;
                 spEl.innerText = `${cur}${sp >= 0 ? '+' : ''}${sp.toFixed(2)}`;
@@ -1899,10 +2091,10 @@ https://www.ebay.co.uk/itm/196612847952 0 sold`;
             }
 
             // Update Supplier Link & Meta
-            const urlEl = document.getElementById(`aurl-${rowIdx}`);
+            const urlEl = document.getElementById(`aurl-${itemId}`);
             if (urlEl) urlEl.href = m.url;
 
-            const metaEl = document.getElementById(`ameta-${rowIdx}`);
+            const metaEl = document.getElementById(`ameta-${itemId}`);
             if (metaEl) {
                 const scCls = m.score >= 80 ? 'mhigh' : (m.score >= 70 ? 'mmid' : 'mlow');
                 const trBadge = m.trusted ? '<span class="tbadge">★ Choice/Top</span>' : '';
@@ -1910,9 +2102,10 @@ https://www.ebay.co.uk/itm/196612847952 0 sold`;
             }
 
             // Update Active Tab Style
-            const wrap = btn.parentElement;
-            wrap.querySelectorAll('.mtab').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
+            if (btn && btn.parentElement) {
+                btn.parentElement.querySelectorAll('.mtab').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            }
         }
 
         // Export Function

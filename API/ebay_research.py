@@ -249,7 +249,7 @@ def fetch_bytes_and_pil(sess, url):
     if not url:
         return None, None
     try:
-        r = sess.get(url, timeout=8)
+        r = sess.get(url, timeout=5)
         if r.status_code == 200 and len(r.content) > 500:
             raw = r.content
             im = Image.open(BytesIO(raw)).convert("RGB")
@@ -463,7 +463,7 @@ def call_aliexpress_ds_api(sess, img_bytes, country_code, ak, as_, at, count="15
                 ALI_GW,
                 data=p,
                 files={"image_file_bytes": ("item.jpg", img_bytes, "image/jpeg")},
-                timeout=14
+                timeout=8
             ).json()
 
             if "error_response" in r:
@@ -509,7 +509,7 @@ def process_ali_for_record(rec, clip_model, ak, as_, at, error_tracker=None):
             return []
         seen_pids = set()
         uniq_prods = []
-        for pr in prods[:15]:
+        for pr in prods[:8]:
             pid = str(pr.get("product_id", ""))
             if pid and pid in seen_pids:
                 continue
@@ -527,7 +527,7 @@ def process_ali_for_record(rec, clip_model, ak, as_, at, error_tracker=None):
                 im.thumbnail((224, 224))
             return pr, im
 
-        with ThreadPoolExecutor(max_workers=8) as sub_ex:
+        with ThreadPoolExecutor(max_workers=6) as sub_ex:
             dl_res = list(sub_ex.map(dl_one, uniq_prods))
 
         v_prods, v_imgs = [], []
@@ -613,7 +613,8 @@ def run_ebay_research(
     ali_secret=None,
     ali_token=None,
     max_items=None,
-    log_callback=None
+    log_callback=None,
+    batch_info=None
 ):
     """
     Main orchestration routine for eBay vs AliExpress Visual Product Research.
@@ -630,10 +631,17 @@ def run_ebay_research(
     errors_list = []
     ali_api_errors = []
 
+    batch_tag = ""
+    if batch_info and isinstance(batch_info, dict):
+        b_num = batch_info.get("batch", 1)
+        b_tot = batch_info.get("total_batches", 1)
+        batch_tag = f"[Batch {b_num}/{b_tot}] "
+
     def log(msg):
+        full_msg = f"{batch_tag}{msg}" if batch_tag else msg
         if log_callback:
-            log_callback(msg)
-        logger.info(msg)
+            log_callback(full_msg)
+        logger.info(full_msg)
 
     # 1. Parse Links
     items_map, raw_id_count = parse_links_input(raw_links, country)
@@ -646,6 +654,7 @@ def run_ebay_research(
             "success": False,
             "message": "No valid 12-digit eBay item IDs found in the provided links.",
             "items": [],
+            "results": [],
             "summary": {"total_links": raw_id_count, "unique_items": 0},
             "errors": ["No valid 12-digit eBay item IDs detected."]
         }
@@ -660,6 +669,7 @@ def run_ebay_research(
             "success": False,
             "message": f"eBay Authentication Failed: {eb_err}",
             "items": [],
+            "results": [],
             "summary": {"total_links": raw_id_count, "unique_items": len(unique_ids)},
             "errors": [f"eBay Token Error: {eb_err}"]
         }
@@ -714,7 +724,7 @@ def run_ebay_research(
     at = (ali_token or DEFAULT_ALI_DS_TOKEN).strip()
 
     log(f"Stage 5/5: Running AliExpress Visual Search for {len(ebay_records)} items...")
-    with ThreadPoolExecutor(max_workers=3) as ex:
+    with ThreadPoolExecutor(max_workers=5) as ex:
         futs = [ex.submit(process_ali_for_record, rec, clip_model, ak, as_, at, ali_api_errors) for rec in ebay_records]
         done_count = 0
         for fut in as_completed(futs):
@@ -812,6 +822,7 @@ def run_ebay_research(
 
     return {
         "success": True,
+        "items": results,
         "results": results,
         "summary": summary,
         "errors": errors_list,

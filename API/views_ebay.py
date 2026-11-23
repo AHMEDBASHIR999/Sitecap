@@ -62,6 +62,7 @@ class EbayResearchRunAPIView(View):
         ali_secret = payload.get("ali_secret")
         ali_token = payload.get("ali_token")
         max_items = payload.get("max_items")
+        batch_info = payload.get("batch_info")
 
         if not raw_links or not str(raw_links).strip():
             return JsonResponse({
@@ -83,7 +84,8 @@ class EbayResearchRunAPIView(View):
                 ali_secret=ali_secret,
                 ali_token=ali_token,
                 max_items=max_items,
-                log_callback=log_collector
+                log_callback=log_collector,
+                batch_info=batch_info
             )
             result["logs"] = logs
             return JsonResponse(result, safe=False)
