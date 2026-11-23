@@ -162,3 +162,7 @@ elif (BASE_DIR.parent / 'key.json').exists():
     GOOGLE_SHEETS_CREDENTIALS_PATH = str(BASE_DIR.parent / 'key.json')
 else:
     GOOGLE_SHEETS_CREDENTIALS_PATH = None
+
+# Request & Upload size limits (support large batch research datasets)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50 MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50 MB

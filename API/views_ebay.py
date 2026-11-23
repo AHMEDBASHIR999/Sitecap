@@ -141,16 +141,20 @@ class EbayExportReportView(View):
     """
     def post(self, request):
         try:
-            if request.content_type == 'application/json':
-                payload = json.loads(request.body.decode('utf-8'))
+            body_str = request.body.decode('utf-8')
+            if body_str:
+                payload = json.loads(body_str)
             else:
+                payload = request.POST.dict()
+        except Exception:
+            try:
                 payload = request.POST.dict()
                 if "results" in payload and isinstance(payload["results"], str):
                     payload["results"] = json.loads(payload["results"])
                 if "summary" in payload and isinstance(payload["summary"], str):
                     payload["summary"] = json.loads(payload["summary"])
-        except Exception as e:
-            return HttpResponse(f"Invalid export payload: {str(e)}", status=400)
+            except Exception as e:
+                return HttpResponse(f"Invalid export payload: {str(e)}", status=400)
 
         results = payload.get("results", [])
         summary = payload.get("summary", {})

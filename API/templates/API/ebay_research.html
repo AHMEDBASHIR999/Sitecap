@@ -2108,40 +2108,356 @@ https://www.ebay.co.uk/itm/196612847952 0 sold`;
             }
         }
 
-        // Export Function
-        async function exportData(format) {
+        // Download helper using browser Blob
+        function downloadBlob(content, filename, mimeType) {
+            const blob = new Blob([content], { type: mimeType });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => window.URL.revokeObjectURL(url), 2000);
+        }
+
+        // Generate Standalone Interactive HTML Document Client-Side
+        function generateStandaloneHtmlDocument(results, summary) {
+            const country = summary.country || currentCountry || 'UK';
+            const cur = (results.length > 0 && results[0].curr) ? results[0].curr : '$';
+            
+            const rowsHtml = results.map((it, idx) => {
+                const i = idx + 1;
+                const st = escapeHtml(it.title || '');
+                const ss = escapeHtml(it.seller || '');
+                const itemCur = it.curr || cur;
+                const ei = it.thumb ? 
+                    `<img src="${it.thumb}" data-large="${it.large || it.thumb}" data-title="eBay: ${st}" class="thumb eb" onclick="openZ(this)">` :
+                    `<div class="noimg">No Img</div>`;
+
+                let sh = '', sv = -1;
+                if (it.sold !== null && it.sold !== undefined && it.sold >= 0) {
+                    const cls = it.sold >= 5 ? 'hot' : (it.sold > 0 ? 'some' : 'zero');
+                    sh = `<span class="sbadge ${cls}">${it.sold} Sold</span>`;
+                    sv = it.sold;
+                }
+
+                const top3 = it.top3 || [];
+                let ai = '<div class="noimg">No Match</div>', ap = '-', sph = '-', sup = '-', ha = 0, sc = 0;
+
+                if (top3.length > 0) {
+                    ha = 1;
+                    const a = top3[0];
+                    const at = escapeHtml(a.title || '');
+                    sc = a.score || 0;
+                    const sc_cls = sc >= 80 ? 'mhigh' : (sc >= 70 ? 'mmid' : 'mlow');
+                    ai = `<img id="aimg-${i}" src="${a.img}" data-large="${a.img}" data-title="Ali (${sc}% Match): ${at}" class="thumb al" onclick="openZ(this)">`;
+                    const w_tag = a.welcome_adj ? ' <span title="Adjusted from Welcome Deal" style="font-size:10px;color:#94a3b8">*</span>' : '';
+                    ap = `<span id="apr-${i}">${itemCur}${(a.price || 0).toFixed(2)}${w_tag}</span>`;
+                    const sp = (it.price || 0) - (a.price || 0);
+                    sph = `<span id="asp-${i}" class="${sp > 0 ? 'ppos' : 'pneg'}">${itemCur}${sp >= 0 ? '+' : ''}${sp.toFixed(2)}</span>`;
+                    const tr_badge = a.trusted ? '<span class="tbadge">★ Choice/Top</span> ' : '';
+
+                    let btns = '';
+                    if (top3.length > 1) {
+                        const t3_json = escapeHtml(JSON.stringify(top3));
+                        btns = `<div class="m-tabs" data-curr="${itemCur}" data-ebay="${it.price}" data-matches="${t3_json}">`;
+                        top3.forEach((m, m_i) => {
+                            const act = m_i === 0 ? 'active' : '';
+                            btns += `<button class="mtab ${act}" onclick="swMatch(${i},${m_i},this)">#${m_i + 1}</button>`;
+                        });
+                        btns += '</div>';
+                    }
+                    sup = `
+                        <a id="aurl-${i}" href="${a.url}" target="_blank" class="abtn">Supplier ↗</a>
+                        <div id="ameta-${i}" class="meta">${tr_badge}<span class="mbadge ${sc_cls}">${sc}%</span> | Sold: ${a.vol || 0}</div>
+                        ${btns}
+                    `;
+                }
+
+                return `
+                    <tr data-listed="${it.ts || 0}" data-sold="${sv}" data-price="${it.price || 0}" data-hasali="${ha}" data-score="${sc}">
+                        <td class="c rnum">${i}</td>
+                        <td class="c">${ei}</td>
+                        <td class="c">${ai}</td>
+                        <td class="c"><span class="badge">${it.age || '-'}</span></td>
+                        <td class="c">${sh}</td>
+                        <td class="c b">${itemCur}${(it.price || 0).toFixed(2)}</td>
+                        <td class="c b aprice">${ap}</td>
+                        <td class="c">${sph}</td>
+                        <td>
+                            <a href="${it.link}" target="_blank" class="ilink">${st}</a>
+                            <div class="meta">ID: ${it.id} | Country: <b>${it.country || 'US'}</b> | Seller: <b>${ss}</b> (${it.loc || '-'})</div>
+                        </td>
+                        <td class="c">${sup}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            return `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>eBay vs AliExpress Turbo Pro Visual Dashboard</title>
+    <style>
+        body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;margin:0;padding:20px;background:#0f172a;color:#f8fafc}
+        .top{background:linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);color:#fff;padding:18px 24px;border-radius:12px;margin-bottom:16px;box-shadow:0 4px 20px rgba(0,0,0,0.3)}
+        .ctrls{display:flex;flex-wrap:wrap;gap:12px;margin-top:14px;align-items:center}
+        .ctrls input,.ctrls select{padding:8px 12px;border-radius:8px;border:1px solid #334155;background:#1e293b;color:#f8fafc;font-size:13px}
+        .stats-bar{display:flex;gap:16px;margin-top:12px;flex-wrap:wrap;font-size:13px;color:#94a3b8}
+        .stat-item{background:rgba(255,255,255,0.08);padding:4px 10px;border-radius:6px;color:#e2e8f0}
+        .stat-item b{color:#38bdf8}
+        .wrap{max-height:750px;overflow-y:auto;border:1px solid #334155;border-radius:10px;background:#1e293b;box-shadow:0 4px 25px rgba(0,0,0,0.4)}
+        table{width:100%;border-collapse:collapse;font-size:13px}
+        th{position:sticky;top:0;background:#0f172a;color:#94a3b8;padding:12px 10px;border-bottom:2px solid #334155;z-index:2;text-align:center;font-weight:600}
+        td{padding:10px 8px;border-bottom:1px solid #334155;vertical-align:middle;color:#e2e8f0}
+        tr:hover{background:rgba(59,130,246,0.06)}
+        .c{text-align:center}
+        .b{font-weight:700}
+        .badge{background:#1e40af;color:#bfdbfe;padding:3px 9px;border-radius:12px;font-size:11.5px;font-weight:700}
+        .sbadge{padding:3px 8px;border-radius:12px;font-weight:700;font-size:11px}
+        .hot{background:#065f46;color:#a7f3d0}
+        .some{background:#854d0e;color:#fef08a}
+        .zero{background:#334155;color:#94a3b8}
+        .mbadge{padding:2px 6px;border-radius:4px;font-weight:700;font-size:10px}
+        .mhigh{background:#065f46;color:#a7f3d0}
+        .mmid{background:#854d0e;color:#fef08a}
+        .mlow{background:#991b1b;color:#fecaca}
+        .tbadge{background:#78350f;color:#fde68a;padding:2px 6px;border-radius:4px;font-weight:700;font-size:10px}
+        .thumb{width:64px;height:64px;object-fit:contain;border-radius:8px;cursor:zoom-in;background:#0f172a}
+        .eb{border:2px solid #3b82f6}
+        .al{border:2px solid #f97316}
+        .noimg{width:64px;height:64px;line-height:64px;font-size:10px;color:#64748b;background:#0f172a;border-radius:8px;margin:auto}
+        .aprice{color:#fb923c}
+        .ppos{background:#065f46;color:#6ee7b7;padding:3px 7px;border-radius:6px;font-weight:700}
+        .pneg{background:#991b1b;color:#fca5a5;padding:3px 7px;border-radius:6px;font-weight:700}
+        .abtn{background:linear-gradient(135deg, #ea580c, #f97316);color:#fff;padding:5px 10px;border-radius:6px;text-decoration:none;font-size:11px;font-weight:600;display:inline-block;box-shadow:0 2px 6px rgba(234,88,12,0.4)}
+        .m-tabs{margin-top:6px;display:flex;gap:4px;justify-content:center}
+        .mtab{border:1px solid #475569;background:#0f172a;color:#cbd5e1;font-size:10px;padding:2px 6px;border-radius:4px;cursor:pointer}
+        .mtab.active{background:#3b82f6;color:#fff;border-color:#3b82f6}
+        .ilink{color:#60a5fa;text-decoration:none;font-weight:600}
+        .ilink:hover{text-decoration:underline}
+        .meta{font-size:11px;color:#94a3b8;margin-top:4px}
+        .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;justify-content:center;align-items:center}
+        .mbox{background:#1e293b;padding:20px;border-radius:12px;max-width:600px;text-align:center;position:relative;border:1px solid #475569}
+        .mbox img{max-width:100%;max-height:480px;object-fit:contain;border-radius:8px}
+        .cbtn{position:absolute;top:-12px;right:-12px;background:#ef4444;color:#fff;border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-weight:700;font-size:16px}
+    </style>
+</head>
+<body>
+    <div class="top">
+        <h2 style="margin:0;font-size:18px;display:flex;align-items:center;gap:10px">
+            <span>⚡ eBay vs AliExpress Turbo Pro Visual Dashboard</span>
+            <span style="font-size:13px;background:rgba(255,255,255,0.15);padding:2px 8px;border-radius:12px">
+                <span id="vc">${results.length}</span> Items
+            </span>
+        </h2>
+        <div class="stats-bar">
+            <span class="stat-item">Unique Items: <b>${summary.unique_items || results.length}</b></span>
+            <span class="stat-item">70%+ Visual Matches: <b>${summary.matches_70_plus || 0}</b></span>
+            <span class="stat-item">Avg Profit Spread: <b>${cur}${(summary.avg_spread || 0).toFixed(2)}</b></span>
+            <span class="stat-item">Hot Items (&ge;5 sold): <b>${summary.hot_items || 0}</b></span>
+            <span class="stat-item">Execution Time: <b>${summary.elapsed_seconds || 0}s</b></span>
+        </div>
+        <div class="ctrls">
+            <select id="ss" onchange="flt()">
+                <option value="listed_desc">Sort: Most Recently Listed</option>
+                <option value="score_desc">Sort: Best Visual Match %</option>
+                <option value="sold_desc">Sort: Most Sold</option>
+                <option value="price_asc">Sort: Price Low to High</option>
+                <option value="price_desc">Sort: Price High to Low</option>
+            </select>
+            <input type="text" id="ib" onkeyup="flt()" placeholder="Search title keyword...">
+            <input type="text" id="eb" onkeyup="flt()" placeholder="Exclude keywords (comma separated)..." style="background:#451a1a;color:#fecaca;border-color:#7f1d1d">
+            <select id="sf" onchange="flt()">
+                <option value="all">Filter: All Listings</option>
+                <option value="ali_70">Filter: Only 70%+ AliExpress Matches</option>
+                <option value="sold_only">Filter: Only With Sold Data</option>
+            </select>
+        </div>
+    </div>
+    <div class="wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>eBay Photo</th>
+                    <th>Ali Photo</th>
+                    <th>Age</th>
+                    <th>Sold</th>
+                    <th>eBay</th>
+                    <th>Ali</th>
+                    <th>Spread</th>
+                    <th>Title & Seller Info</th>
+                    <th>Supplier / Match</th>
+                </tr>
+            </thead>
+            <tbody id="tb">
+                ${rowsHtml}
+            </tbody>
+        </table>
+    </div>
+    <div id="zm" class="modal" onclick="this.style.display='none'">
+        <div class="mbox" onclick="event.stopPropagation()">
+            <button class="cbtn" onclick="document.getElementById('zm').style.display='none'">×</button>
+            <img id="zi" src="">
+            <div id="zt" style="margin-top:12px;font-weight:600;color:#f8fafc;font-size:14px"></div>
+        </div>
+    </div>
+    <script` + `>
+        function openZ(el){
+            document.getElementById('zi').src = el.dataset.large;
+            document.getElementById('zt').innerText = el.dataset.title;
+            document.getElementById('zm').style.display = 'flex';
+        }
+        function swMatch(rowId, idx, btn){
+            const wrap = btn.parentElement;
+            const cur = wrap.dataset.curr || '$';
+            const matches = JSON.parse(wrap.dataset.matches);
+            const ebayPr = parseFloat(wrap.dataset.ebay);
+            const m = matches[idx];
+            const img = document.getElementById('aimg-' + rowId);
+            if (img) {
+                img.src = m.img;
+                img.dataset.large = m.img;
+                img.dataset.title = 'Ali (' + m.score + '% Match): ' + m.title;
+            }
+            const wTag = m.welcome_adj ? ' <span title="Adjusted from Welcome Deal" style="font-size:10px;color:#94a3b8">*</span>' : '';
+            const prEl = document.getElementById('apr-' + rowId);
+            if (prEl) prEl.innerHTML = cur + m.price.toFixed(2) + wTag;
+            const sp = ebayPr - m.price;
+            const spEl = document.getElementById('asp-' + rowId);
+            if (spEl) {
+                spEl.innerText = cur + (sp >= 0 ? '+' : '') + sp.toFixed(2);
+                spEl.className = sp > 0 ? 'ppos' : 'pneg';
+            }
+            const urlEl = document.getElementById('aurl-' + rowId);
+            if (urlEl) urlEl.href = m.url;
+            const cls = m.score >= 80 ? 'mhigh' : (m.score >= 70 ? 'mmid' : 'mlow');
+            const trBadge = m.trusted ? '<span class="tbadge">★ Choice/Top</span> ' : '';
+            const metaEl = document.getElementById('ameta-' + rowId);
+            if (metaEl) metaEl.innerHTML = trBadge + '<span class="mbadge ' + cls + '">' + m.score + '%</span> | Sold: ' + m.vol;
+            const row = btn.closest('tr');
+            if (row) row.dataset.score = m.score;
+            wrap.querySelectorAll('.mtab').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+        function flt(){
+            const tb = document.getElementById('tb');
+            const rs = Array.from(tb.querySelectorAll('tr'));
+            const sm = document.getElementById('ss').value;
+            const iq = document.getElementById('ib').value.toLowerCase().trim();
+            const ew = document.getElementById('eb').value.toLowerCase().split(',').map(w => w.trim()).filter(Boolean);
+            const fm = document.getElementById('sf').value;
+
+            rs.sort((a,b) => {
+                if (sm === 'listed_desc') return (b.dataset.listed || 0) - (a.dataset.listed || 0);
+                if (sm === 'score_desc') return (b.dataset.score || 0) - (a.dataset.score || 0);
+                if (sm === 'sold_desc') return (b.dataset.sold || 0) - (a.dataset.sold || 0);
+                if (sm === 'price_asc') return (a.dataset.price || 0) - (b.dataset.price || 0);
+                return (b.dataset.price || 0) - (a.dataset.price || 0);
+            });
+
+            let c = 0;
+            rs.forEach(r => {
+                const t = r.innerText.toLowerCase();
+                const sv = parseInt(r.dataset.sold);
+                const ha = parseInt(r.dataset.hasali);
+                const sc = parseFloat(r.dataset.score) || 0;
+                const ok = (!iq || t.includes(iq)) &&
+                           (!ew.some(w => t.includes(w))) &&
+                           (fm === 'all' || (fm === 'ali_70' && ha === 1 && sc >= 70.0) || (fm === 'sold_only' && sv >= 0));
+                r.style.display = ok ? '' : 'none';
+                if(ok){
+                    c++;
+                    const numEl = r.querySelector('.rnum');
+                    if (numEl) numEl.innerText = c;
+                }
+                tb.appendChild(r);
+            });
+            const vcEl = document.getElementById('vc');
+            if (vcEl) vcEl.innerText = c;
+        }
+    <` + `/script>
+</body>
+</html>`;
+        }
+
+        // Instant, Resilient Client-Side Export (Zero Server Payload Limit)
+        function exportData(format) {
             if (!latestResults || !latestResults.length) {
                 showToast('Export Notice', 'No research data to export yet.', 'warning');
                 return;
             }
 
-            showToast('Generating Export', `Preparing ${format.toUpperCase()} export...`, 'info');
+            const countryCode = (currentCountry || 'all').toLowerCase();
+            const ts = Date.now();
 
             try {
-                const resp = await fetch('/ebay-research/api/export/', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        format: format,
-                        results: latestResults,
-                        summary: latestSummary
-                    })
-                });
+                if (format === 'json') {
+                    const data = {
+                        exported_at: new Date().toISOString(),
+                        summary: latestSummary,
+                        total_items: latestResults.length,
+                        results: latestResults
+                    };
+                    downloadBlob(JSON.stringify(data, null, 2), `ebay_research_${countryCode}_${ts}.json`, 'application/json;charset=utf-8');
+                    showToast('Download Ready', `Exported ${latestResults.length} items to JSON successfully!`, 'success');
+                    return;
+                }
 
-                if (!resp.ok) throw new Error('Export generation failed.');
+                if (format === 'csv') {
+                    const headers = [
+                        "Index", "Item ID", "Country", "Title", "eBay Price", "Currency",
+                        "Sold Count", "Age", "Seller", "Location", "eBay Link",
+                        "Ali Top Title", "Ali Top Price", "Ali Top Score %", "Spread", "Ali Link"
+                    ];
 
-                const blob = await resp.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `ebay_research_${currentCountry.toLowerCase()}_${Date.now()}.${format === 'html' ? 'html' : (format === 'csv' ? 'csv' : 'json')}`;
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                window.URL.revokeObjectURL(url);
-                showToast('Download Ready', `Exported to ${format.toUpperCase()} successfully!`, 'success');
-            } catch (e) {
-                showToast('Export Failed', e.message, 'danger');
+                    function escapeCsv(val) {
+                        if (val === null || val === undefined) return '""';
+                        const str = String(val).replace(/"/g, '""');
+                        return `"${str}"`;
+                    }
+
+                    const rows = [headers.join(',')];
+                    latestResults.forEach((it, idx) => {
+                        const top3 = it.top3 || [];
+                        const t1 = top3[0] || {};
+                        const row = [
+                            idx + 1,
+                            escapeCsv(it.id),
+                            escapeCsv(it.country || ''),
+                            escapeCsv(it.title || ''),
+                            it.price !== undefined && it.price !== null ? it.price : '',
+                            escapeCsv(it.curr || '$'),
+                            it.sold !== undefined && it.sold !== null ? it.sold : '',
+                            escapeCsv(it.age || ''),
+                            escapeCsv(it.seller || ''),
+                            escapeCsv(it.loc || ''),
+                            escapeCsv(it.link || ''),
+                            escapeCsv(t1.title || ''),
+                            t1.price !== undefined && t1.price !== null ? t1.price : '',
+                            t1.score !== undefined && t1.score !== null ? t1.score : '',
+                            it.spread !== undefined && it.spread !== null ? it.spread : '',
+                            escapeCsv(t1.url || '')
+                        ];
+                        rows.push(row.join(','));
+                    });
+
+                    downloadBlob(rows.join('\r\n'), `ebay_research_${countryCode}_${ts}.csv`, 'text/csv;charset=utf-8;');
+                    showToast('Download Ready', `Exported ${latestResults.length} items to CSV successfully!`, 'success');
+                    return;
+                }
+
+                if (format === 'html') {
+                    const htmlDoc = generateStandaloneHtmlDocument(latestResults, latestSummary);
+                    downloadBlob(htmlDoc, `ebay_vs_aliexpress_turbo_visual_${countryCode}_${ts}.html`, 'text/html;charset=utf-8');
+                    showToast('Download Ready', `Exported ${latestResults.length} items to Standalone HTML successfully!`, 'success');
+                    return;
+                }
+            } catch (err) {
+                console.error('Export generation error:', err);
+                showToast('Export Failed', err.message, 'danger');
             }
         }
 
