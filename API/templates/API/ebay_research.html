@@ -916,6 +916,20 @@
             align-items: center;
         }
 
+        /* History Cards */
+        .history-card {
+            background: #1e293b;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 14px 16px;
+            transition: all 0.2s;
+        }
+        .history-card:hover {
+            border-color: #3b82f6;
+            background: #1e293b;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
         .form-field {
             display: flex;
             flex-direction: column;
@@ -1001,6 +1015,9 @@
                 <span class="status-dot" id="model-dot"></span>
                 <span id="model-label">AI Model: Ready</span>
             </div>
+            <button class="btn btn-secondary btn-sm" id="history-modal-btn" onclick="openHistoryModal()">
+                <span>🕒</span> Saved Sessions <span class="badge" id="history-badge" style="display:none; font-size:10px; margin-left:4px; background:#3b82f6">0</span>
+            </button>
             <button class="btn btn-secondary btn-sm" onclick="openSettingsModal()">
                 <span>🔑</span> API Credentials & Keys
             </button>
@@ -1035,6 +1052,31 @@
                 <span>Auto-Detect</span>
                 <span class="country-tag">Mixed Links</span>
             </button>
+        </div>
+
+        <!-- Restore Previous Session Banner (Auto-detects if tab was closed or refreshed) -->
+        <div id="restore-banner" class="card" style="display:none; background: linear-gradient(135deg, rgba(30,58,138,0.35) 0%, rgba(15,23,42,0.85) 100%); border: 1px solid #3b82f6; margin-bottom: 20px; padding: 14px 18px">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px">
+                <div style="display: flex; align-items: center; gap: 12px">
+                    <span style="font-size: 24px">💾</span>
+                    <div>
+                        <div style="font-weight: 600; font-size: 14px; color: #f8fafc" id="restore-banner-title">
+                            Previous Research Session Available
+                        </div>
+                        <div style="font-size: 12px; color: #94a3b8" id="restore-banner-sub">
+                            Found saved items from your previous research run. Click Restore to reload your table and exports.
+                        </div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 8px">
+                    <button class="btn btn-accent btn-sm" id="restore-banner-btn" onclick="restoreLatestSession()">
+                        <span>⚡</span> Restore Results
+                    </button>
+                    <button class="btn btn-secondary btn-sm" onclick="dismissRestoreBanner()">
+                        Dismiss
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- Links Input & Run Card -->
@@ -1339,6 +1381,33 @@
         </div>
     </div>
 
+    <!-- Research History & Saved Sessions Drawer -->
+    <div id="history-modal" class="settings-modal" onclick="closeHistoryModal()">
+        <div class="settings-drawer" style="width: 580px; max-width: 95vw" onclick="event.stopPropagation()">
+            <div class="drawer-header">
+                <div class="drawer-title">
+                    <span>🕒</span> Research History & Saved Sessions
+                </div>
+                <button class="btn btn-outline btn-sm" onclick="closeHistoryModal()">✕ Close</button>
+            </div>
+
+            <p style="font-size: 12.5px; color: var(--text-muted); line-height: 1.5; margin: 0">
+                Executions are automatically saved in your browser's persistent database. You can restore previous runs or export them even after closing the tab or restarting your browser.
+            </p>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; border-bottom: 1px solid var(--border-color)">
+                <span style="font-size: 13px; font-weight: 600; color: #cbd5e1" id="history-count-title">Saved Sessions</span>
+                <button class="btn btn-outline btn-sm" style="border-color:#ef4444; color:#fca5a5; font-size:11px; padding:3px 8px" onclick="clearAllHistory()">
+                    🗑️ Clear All
+                </button>
+            </div>
+
+            <div id="history-list-container" style="flex: 1; overflow-y: auto; padding-right: 4px; display: flex; flex-direction: column; gap: 10px">
+                <!-- Dynamically rendered history items -->
+            </div>
+        </div>
+    </div>
+
     <!-- Application Script -->
     <script>
         // Global State
@@ -1375,10 +1444,348 @@ https://www.ebay.co.uk/itm/196612847952 0 sold`;
             return localStorage.getItem(name);
         }
 
+        // ==========================================
+        // IndexedDB Persistent Storage & Session Engine
+        // ==========================================
+        const DB_NAME = 'TurboEbayResearchDB';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'sessions';
+
+        function openDatabase() {
+            return new Promise((resolve, reject) => {
+                if (!window.indexedDB) {
+                    reject(new Error('IndexedDB not supported'));
+                    return;
+                }
+                const req = indexedDB.open(DB_NAME, DB_VERSION);
+                req.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                    }
+                };
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        async function dbPut(record) {
+            try {
+                const db = await openDatabase();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction(STORE_NAME, 'readwrite');
+                    const store = tx.objectStore(STORE_NAME);
+                    const req = store.put(record);
+                    req.onsuccess = () => resolve(true);
+                    req.onerror = () => reject(req.error);
+                });
+            } catch (e) {
+                console.warn('IndexedDB put error:', e);
+                return false;
+            }
+        }
+
+        async function dbGet(id) {
+            try {
+                const db = await openDatabase();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction(STORE_NAME, 'readonly');
+                    const store = tx.objectStore(STORE_NAME);
+                    const req = store.get(id);
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = () => reject(req.error);
+                });
+            } catch (e) {
+                console.warn('IndexedDB get error:', e);
+                return null;
+            }
+        }
+
+        async function dbGetAll() {
+            try {
+                const db = await openDatabase();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction(STORE_NAME, 'readonly');
+                    const store = tx.objectStore(STORE_NAME);
+                    const req = store.getAll();
+                    req.onsuccess = () => resolve(req.result || []);
+                    req.onerror = () => reject(req.error);
+                });
+            } catch (e) {
+                console.warn('IndexedDB getAll error:', e);
+                return [];
+            }
+        }
+
+        async function dbDelete(id) {
+            try {
+                const db = await openDatabase();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction(STORE_NAME, 'readwrite');
+                    const store = tx.objectStore(STORE_NAME);
+                    const req = store.delete(id);
+                    req.onsuccess = () => resolve(true);
+                    req.onerror = () => reject(req.error);
+                });
+            } catch (e) {
+                console.warn('IndexedDB delete error:', e);
+                return false;
+            }
+        }
+
+        async function dbClear() {
+            try {
+                const db = await openDatabase();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction(STORE_NAME, 'readwrite');
+                    const store = tx.objectStore(STORE_NAME);
+                    const req = store.clear();
+                    req.onsuccess = () => resolve(true);
+                    req.onerror = () => reject(req.error);
+                });
+            } catch (e) {
+                console.warn('IndexedDB clear error:', e);
+                return false;
+            }
+        }
+
+        // Auto-save active session on every batch
+        async function autoSaveActiveSession() {
+            if (!latestResults || !latestResults.length) return;
+            const record = {
+                id: 'active_session',
+                name: `Latest Run (${latestResults.length} items)`,
+                timestamp: Date.now(),
+                dateStr: new Date().toLocaleString(),
+                country: currentCountry,
+                results: latestResults,
+                summary: latestSummary,
+                linksInput: document.getElementById('links-textarea').value
+            };
+            await dbPut(record);
+            updateHistoryBadge();
+        }
+
+        // Archive completed execution to history
+        async function saveCompletedSessionToHistory() {
+            if (!latestResults || !latestResults.length) return;
+            const ts = Date.now();
+            const record = {
+                id: 'session_' + ts,
+                name: `${currentCountry} Research - ${latestResults.length} items`,
+                timestamp: ts,
+                dateStr: new Date().toLocaleString(),
+                country: currentCountry,
+                results: latestResults,
+                summary: latestSummary,
+                linksInput: document.getElementById('links-textarea').value
+            };
+            await dbPut(record);
+            record.id = 'active_session';
+            await dbPut(record);
+            updateHistoryBadge();
+        }
+
+        // Check for saved session on page load
+        async function checkForSavedSession() {
+            try {
+                const active = await dbGet('active_session');
+                if (active && active.results && active.results.length > 0) {
+                    const banner = document.getElementById('restore-banner');
+                    const title = document.getElementById('restore-banner-title');
+                    const sub = document.getElementById('restore-banner-sub');
+                    const btn = document.getElementById('restore-banner-btn');
+                    if (banner) {
+                        banner.style.display = 'block';
+                        if (title) title.innerText = `Previous Session Saved (${active.results.length} items)`;
+                        if (sub) sub.innerText = `Found ${active.results.length} items saved from ${active.dateStr} (${active.country || 'UK'} marketplace). Click Restore to view your table and exports.`;
+                        if (btn) btn.innerHTML = `<span>⚡</span> Restore ${active.results.length} Items`;
+                    }
+                }
+                updateHistoryBadge();
+            } catch (err) {
+                console.warn('Error checking saved session:', err);
+            }
+        }
+
+        async function restoreLatestSession() {
+            const active = await dbGet('active_session');
+            if (!active || !active.results || !active.results.length) {
+                showToast('No Data', 'No saved session data found.', 'warning');
+                return;
+            }
+            loadSessionData(active);
+            dismissRestoreBanner();
+            showToast('Session Restored', `Restored ${active.results.length} items from ${active.dateStr}!`, 'success');
+        }
+
+        function dismissRestoreBanner() {
+            const banner = document.getElementById('restore-banner');
+            if (banner) banner.style.display = 'none';
+        }
+
+        function loadSessionData(session) {
+            latestResults = session.results || [];
+            latestSummary = session.summary || {};
+            if (session.country) {
+                currentCountry = session.country;
+                document.querySelectorAll('.country-tab').forEach(b => {
+                    b.classList.toggle('active', b.dataset.country === currentCountry);
+                });
+            }
+            if (session.linksInput) {
+                document.getElementById('links-textarea').value = session.linksInput;
+                onLinksInput();
+            }
+            renderDashboard(latestResults, latestSummary, true);
+        }
+
+        async function updateHistoryBadge() {
+            try {
+                const sessions = await dbGetAll();
+                const count = sessions.filter(s => s.id !== 'active_session').length;
+                const badge = document.getElementById('history-badge');
+                if (badge) {
+                    if (count > 0) {
+                        badge.style.display = 'inline-block';
+                        badge.innerText = count;
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+            } catch (e) {
+                // Ignore
+            }
+        }
+
+        // History Modal Open/Close
+        async function openHistoryModal() {
+            document.getElementById('history-modal').style.display = 'flex';
+            await renderHistoryList();
+        }
+
+        function closeHistoryModal() {
+            document.getElementById('history-modal').style.display = 'none';
+        }
+
+        async function renderHistoryList() {
+            const container = document.getElementById('history-list-container');
+            container.innerHTML = '<div style="text-align:center; padding:20px; color:#94a3b8">Loading saved sessions...</div>';
+            const sessions = await dbGetAll();
+            const historyEntries = sessions
+                .filter(s => s.id !== 'active_session')
+                .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+            const titleEl = document.getElementById('history-count-title');
+            if (titleEl) titleEl.innerText = `Saved Sessions (${historyEntries.length})`;
+
+            if (!historyEntries.length) {
+                const active = sessions.find(s => s.id === 'active_session');
+                if (active && active.results && active.results.length) {
+                    historyEntries.push(active);
+                }
+            }
+
+            if (!historyEntries.length) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px; color: #64748b">
+                        <div style="font-size: 32px; margin-bottom: 8px">📂</div>
+                        <div style="font-weight: 600; color: #cbd5e1">No Saved Sessions Yet</div>
+                        <div style="font-size: 12px; margin-top: 4px">When you run Turbo Visual Search, executions are automatically saved here so you never lose results.</div>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = '';
+            historyEntries.forEach(s => {
+                const card = document.createElement('div');
+                card.className = 'history-card';
+                const cur = (s.results && s.results.length && s.results[0].curr) ? s.results[0].curr : '$';
+                const avgSpread = (s.summary && s.summary.avg_spread) ? `${cur}${s.summary.avg_spread.toFixed(2)}` : '-';
+                const matches70 = (s.summary && s.summary.matches_70_plus) ? s.summary.matches_70_plus : 0;
+                const hotItems = (s.summary && s.summary.hot_items) ? s.summary.hot_items : 0;
+
+                card.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px">
+                        <div>
+                            <div style="font-weight: 700; font-size: 14px; color: #f8fafc; display:flex; align-items:center; gap:8px">
+                                <span>📦 ${escapeHtml(s.name || 'Research Run')}</span>
+                                <span class="badge" style="background:#1e3a8a; font-size:10px">${escapeHtml(s.country || 'UK')}</span>
+                            </div>
+                            <div style="font-size: 11.5px; color: #94a3b8; margin-top: 4px">
+                                Saved: <b>${s.dateStr || new Date(s.timestamp).toLocaleString()}</b> &bull; 
+                                <b>${s.results ? s.results.length : 0} items</b>
+                            </div>
+                            <div style="display: flex; gap: 8px; margin-top: 8px; font-size: 11.5px; flex-wrap: wrap">
+                                <span style="background: rgba(16, 185, 129, 0.15); color: #6ee7b7; padding: 2px 8px; border-radius: 4px">
+                                    ★ ${matches70} High Matches (70%+)
+                                </span>
+                                <span style="background: rgba(249, 115, 22, 0.15); color: #fdba74; padding: 2px 8px; border-radius: 4px">
+                                    Avg Spread: ${avgSpread}
+                                </span>
+                                <span style="background: rgba(59, 130, 246, 0.15); color: #93c5fd; padding: 2px 8px; border-radius: 4px">
+                                    🔥 ${hotItems} Hot Items
+                                </span>
+                            </div>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-end">
+                            <button class="btn btn-accent btn-sm" onclick="restoreSessionById('${s.id}')">
+                                <span>⚡</span> Load Results
+                            </button>
+                            <button class="btn btn-outline btn-sm" style="border-color:#ef4444; color:#fca5a5; font-size:11px; padding:2px 8px" onclick="deleteSessionById('${s.id}')">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        async function restoreSessionById(id) {
+            const session = await dbGet(id);
+            if (!session) {
+                showToast('Error', 'Session not found.', 'danger');
+                return;
+            }
+            loadSessionData(session);
+            closeHistoryModal();
+            dismissRestoreBanner();
+            showToast('Session Loaded', `Loaded ${session.results ? session.results.length : 0} items from ${session.dateStr}!`, 'success');
+        }
+
+        async function deleteSessionById(id) {
+            if (!confirm('Are you sure you want to delete this saved session?')) return;
+            await dbDelete(id);
+            await renderHistoryList();
+            updateHistoryBadge();
+            showToast('Deleted', 'Session removed from history.', 'info');
+        }
+
+        async function clearAllHistory() {
+            if (!confirm('Are you sure you want to delete all saved research history?')) return;
+            await dbClear();
+            await renderHistoryList();
+            updateHistoryBadge();
+            dismissRestoreBanner();
+            showToast('Cleared', 'All saved history has been cleared.', 'info');
+        }
+
+        // Warn before closing/refreshing tab while research is running
+        window.addEventListener('beforeunload', (e) => {
+            if (isResearchRunning) {
+                e.preventDefault();
+                e.returnValue = 'Research is actively running! If you close the tab, execution will stop.';
+                return e.returnValue;
+            }
+        });
+
         // Initialize state on page load
         window.addEventListener('DOMContentLoaded', () => {
             loadCredentialsFromCookies();
             checkModelStatus();
+            checkForSavedSession();
         });
 
         function loadCredentialsFromCookies() {
@@ -1873,6 +2280,7 @@ https://www.ebay.co.uk/itm/196612847952 0 sold`;
                 // Live stream to dashboard
                 if (latestResults.length > 0) {
                     renderDashboard(latestResults, latestSummary, b === 0);
+                    autoSaveActiveSession();
                 }
 
                 // Small pause between batches to avoid API frequency thresholds
@@ -1891,7 +2299,8 @@ https://www.ebay.co.uk/itm/196612847952 0 sold`;
             if (latestResults.length > 0) {
                 updateProgress(100, `Complete! Processed ${latestResults.length} items.`);
                 renderDashboard(latestResults, latestSummary, false);
-                showToast('Research Complete!', `Successfully processed ${latestResults.length} items with ${latestSummary.matches_70_plus} visual matches!`, 'success');
+                await saveCompletedSessionToHistory();
+                showToast('Research Complete!', `Successfully processed ${latestResults.length} items with ${latestSummary.matches_70_plus} visual matches! Auto-saved to history.`, 'success');
             } else {
                 updateProgress(100, 'Process ended.');
             }
